@@ -1,0 +1,45 @@
+apiVersion: v1 # versao da api no k8s
+kind: Pod # tipo do objeto 
+metadata:  #metadata do Pod, sempre com 2 espaços de identaçao
+  name: pod-day2 #nome do Pod
+  labels: #labels do Pod
+    run: pod-day2 # label run com valor pod-day2
+spec: #especificacoes do Pod
+ containers: #containers que estão dentro do Pod
+ - name: nginx #nome do container
+   image: nginx # imagem do container
+   ports:
+   - containerPort: 80 #porta 80 exposta pelo container
+   resources:
+     limits: # limite de recurso que o POD poderá consumir
+       cpu: "0.5" #metade de 1 core ou 500miliCPU = 500m
+       memory: "128Mi" #especificar em Mega
+     requests: # reserva de recursos ao subir o POD
+       cpu: "0.3" # 0.3 de 1 core ou 300miliCPU = 300m
+       memory: "64Mi" 
+   volumeMounts: #declaração do volume dentro do container
+   - mountPath: /dados #Caminho que irá montar dentro do container # o ifen significa qu esta sendo criado uma lista
+     name: volume-emptydir   
+ - name: alpine
+   image: alpine #imagem linux leve que nao possui um processo principal q executa em primeiro plano, por isso o sleep 1800, que adiciona um processo principa>
+   args: #lista de argumentos do container
+   - sleep #ira rodar um processo sleep em primeiro plano
+   - "1800"
+   volumeMounts:
+   - mountPath: /dados #ira compartilhar dados com o container nginx
+     name: volume-emptydir
+   resources:
+     limits: # limite de recurso que o POD poderá consumir
+       cpu: "1" 
+       memory: "256Mi" #especificar em Mega
+     requests: # reserva de recursos ao subir o POD
+       cpu: "0.5" 
+       memory: "128Mi" 
+
+ dnsPolicy: ClusterFirst #resolve DNS primeiro no cluster depois externo
+ restartPolicy: Always  
+ volumes: # definição do volume que será criado pelo container 
+ - name: volume-emptydir # é nome que será declarado la encima no container
+   emptyDir: #tipo do volume
+     sizeLimit: 256Mi #256Mega tamanho max do volume que inicialmente é criado vazio 
+   
