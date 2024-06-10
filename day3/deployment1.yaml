@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-deployment
+    fruta: banana
+  name: nginx-deployment
+  namespace: apps # mudando a namespace da API
+spec:
+  replicas: 10
+  revisionHistoryLimit: 10 # define o limit de revisoes do deployment
+  selector:  #selector é definido para saber quais pods o Deployment irá gerenciar 
+    matchLabels: #através dessa chave é definido as labels dos Pods que o Deployment irá gerenciar
+      app: nginx-deployment
+  strategy: # estratégia de update dos pods
+    #type: Recreate
+    type: RollingUpdate # tipo da estratégia # há 2 RollingUpdate e Recreate
+    rollingUpdate: 
+      maxSurge: 1 # pode ter 1 a mais do que definido nas replicas
+      maxUnavailable: 2 # vai atualizar de 2 em 2 pods
+  template: #!! a partir desse ponto inicia a definição para criação dos Pods e containers
+    metadata:
+      labels:
+        app: nginx-deployment
+    spec:
+      containers:
+      - image: nginx:1.14.0 # adicionando versao especifica
+        name: nginx
+        resources: # recursos dentro de containers
+          limits:
+            cpu: 0.7
+            memory: 256Mi
+          requests:
+            cpu: 0.4
+            memory: 64Mi
