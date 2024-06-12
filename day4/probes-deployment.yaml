@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-deployment
+    fruta: banana
+  name: nginx-deployment
+  namespace: apps # mudando a namespace da API
+spec:
+  replicas: 2
+  revisionHistoryLimit: 10 # define o limit de revisoes do deployment
+  selector:  #selector é definido para saber quais pods o Deployment irá gerenciar 
+    matchLabels: #através dessa chave é definido as labels dos Pods que o Deployment irá gerenciar
+      app: nginx-deployment
+  strategy: # estratégia de update dos pods
+    #type: Recreate
+    type: RollingUpdate # tipo da estratégia # há 2 RollingUpdate e Recreate
+    rollingUpdate: 
+      maxSurge: 1 # pode ter 1 a mais do que definido nas replicas
+      maxUnavailable: 2 # vai atualizar de 2 em 2 pods
+  template: #!! a partir desse ponto inicia a definição para criação dos Pods e containers
+    metadata:
+      labels:
+        app: nginx-deployment
+    spec:
+      containers:
+      - image: nginx:1.19.0 # adicionando versao especifica
+        name: nginx
+        resources: # recursos dentro de containers
+          limits:
+            cpu: 0.7
+            memory: 256Mi
+          requests:
+            cpu: 0.4
+            memory: 64Mi
+        livenessProbe:
+          # httpGet: # Aqui vamos utilizar o httpGet, onde vamos se conectar ao container através do protocolo HTTP
+           # path:  # Qual o endpoint que vamos utilizar para se conectar ao container
+          tcpSocket: #teste de conexao na porta TCP socket 80
+            port: 80
+          initialDelaySeconds: 10 #Aguardar um tempo antes de fazer o primeiro teste  
+          periodSeconds: 10  # a cda 10 segundos
+          timeoutSeconds: 5
+          failureThreshold: 3 # quantas vezes testou para detectar falha
+        readinessProbe:
+          exec: # executa um comando no container
+            command: # nesse caso o um comando curl -f http://localhost:80
+            - curl
+            - -f
+            - http://localhost:80/ 
+          initialDelaySeconds: 10 #Aguardar um tempo antes de fazer o primeiro teste  
+          periodSeconds: 10  # a cda 10 segundos
+          timeoutSeconds: 5
+          failureThreshold: 3 # quantas vezes testou para detectar falha
+          successThreshold: 1 # quantas vezes para retornar sucesso 
+        startupProbe: # Sera executado somente na inicialização do POD, 1 unica vez
+          httpGet: # Aqui vamos utilizar o httpGet, onde vamos se conectar ao container através do>
+            path:  # Qual o endpoint que vamos utilizar para se conectar ao container
+            port: 80
+          initialDelaySeconds: 10 #Aguardar um tempo antes de fazer o primeiro teste  
+          timeoutSeconds: 5
+         
+        
