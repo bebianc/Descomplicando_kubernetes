@@ -33,14 +33,12 @@ Alguns tópicos que são interessante conhecer antes de se aprofundar no univers
 
 ### Arquitetura k8s
 
- - **Control Plane**: Controlar e garantir a disponibilidade, saúde e armazenamento do estado do cluster. É o orquestrador do cluster. Não é recomendado ter APIs no Control Plane. Cria e gerencia os workers e a rede do cluster, como: namespaces, deployments, services, configmaps, secrets...
-  
- *Componentes do Control Plane*: 
-    - ETCD (portas TCP 2379 e 2380): banco do cluster que guarda o estado real e atual do cluster, armazena as informações de configuração de todo o control plane. Pode usar criptografia TLS. Só comunica com o Kube ApiServer. Plano de Backup para os dados: [https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster)
-    - kube-scheduler (porta 10251): Reponsável por agendar aonde irá executar os novos Pods, selecionando um node para executá-los de acordo com os requisitos e os recursos disponíveis. Monitora a situação do cluster podendo ajustar a distribuição dos pods para garantir melhor utilização dos recursos.
-    - kube-controller-manager (porta 10252): Controlador do cluster. É o core do cluster que vai gerenciar os diferentes controladores que regulam o estado do cluster (controllers: deployment, replicaset...). Monitora o estado atual dos recursos comparando com o estado desejado. 
-    -  kube-apiserver (porta TCP 6443): Comunica com todos os componentes do Control Plane e com os Workers, bem como ferramentas externas, se comuniquem com o cluster, sendo a principal interface de comunicação do Kubernetes. Centraliza as informações para guardar no ETCD. É o front da camada de gerenciamento.
-    - cloud-controller-manager: permite vincular o cluster API da nuvem para interação entre componentes.
+ - **Control Plane**: Controlar e garantir a disponibilidade, saúde e armazenamento do estado do cluster. É o orquestrador do cluster. Não é recomendado ter APIs no Control Plane. Cria e gerencia os workers e a rede do cluster, como: namespaces, deployments, services, configmaps, secrets... *Componentes do Control Plane*: 
+  - ETCD (portas TCP 2379 e 2380): banco do cluster que guarda o estado real e atual do cluster, armazena as informações de configuração de todo o control plane. Pode usar criptografia TLS. Só comunica com o Kube ApiServer. Plano de Backup para os dados: [https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster](https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster)
+  - kube-scheduler (porta 10251): Reponsável por agendar aonde irá executar os novos Pods, selecionando um node para executá-los de acordo com os requisitos e os recursos disponíveis. Monitora a situação do cluster podendo ajustar a distribuição dos pods para garantir melhor utilização dos recursos.
+  - kube-controller-manager (porta 10252): Controlador do cluster. É o core do cluster que vai gerenciar os diferentes controladores que regulam o estado do cluster (controllers: deployment, replicaset...). Monitora o estado atual dos recursos comparando com o estado desejado. 
+  -  kube-apiserver (porta TCP 6443): Comunica com todos os componentes do Control Plane e com os Workers, bem como ferramentas externas, se comuniquem com o cluster, sendo a principal interface de comunicação do Kubernetes. Centraliza as informações para guardar no ETCD. É o front da camada de gerenciamento.
+  - cloud-controller-manager: permite vincular o cluster API da nuvem para interação entre componentes.
    
  - **Workers**: Nodos aonde estão rodando as aplicações. Principal função é executar os pods.
  *Componentes*:
