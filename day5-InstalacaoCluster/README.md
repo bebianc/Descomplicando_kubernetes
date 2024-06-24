@@ -91,8 +91,8 @@ Criar arquivo para definições para habilitar os módulos do Kernel que serão 
 sudo nano /etc/modules-load.d/k8s.conf
 ```
 Adicionar os 2 módulos no arquivo:
-overlay
-br_netfilter 
+- overlay
+- br_netfilter 
 
 Recarregar os módulos:
 ```
@@ -118,14 +118,19 @@ Instalando pacotes adicionais e o Kubernetes:
 ```
 sudo apt-get update
 sudo apt-get install apt-transport-https curl -y
+
 # Carregar a chave para instalação dos pacotes do k8s
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
 # Adicionar o pacote do Kubernetes no arquivo "kubernetes.list"
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
 # Atualizar
 sudo apt-get update
+
 # Instalar os pacotes
 sudo apt-get install -y kubelet kubeadm kubectl
+
 # Adicionar os pacotes para não atualizar automaticamente, evitar quebrar o cluster
 sudo apt-mark hold kubelet kubeadm kubectl
 
