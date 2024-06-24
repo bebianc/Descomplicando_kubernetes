@@ -58,5 +58,76 @@ No meu caso, quando ativei o *broadcast all* caracteres eram inseridos duplicado
 ```
 pskill -9 ibus
 sudo apt remove ibus
+```
+Para conectar nas instâncias, selecione uma por vez e clique em "Conectar", na aba "Cliente SSH", copie o comando *ssh -i*... e cole em cada um dos terminais.
+Uma vez conectado mude o hostname de cada máquina para facilitar a identificação.
 
 ```
+sudo su
+hostnamectl hostname k8s-controlplane #maquina1
+hostnamectl hostname k8s-worker1 #maquina2
+hostnamectl hostname k8s-worker2 #maquina3
+exit
+bash
+#verá que o hostname foi alterado
+```
+### Preparando o sistema e instalando do kubeadm
+
+Primeira coisa a se fazer em uma instalação do cluster k8s é desativar a *swap* das máquinas:
+
+```
+sudo swap off -a
+```
+Remova sua entrada do arquivo /etc/fstab.
+Regenere unidades de montagem para que o sistema registre a nova configuração:
+
+```
+systemctl daemon-reload
+```
+
+Criar arquivo para definições para habilitar os módulos do Kernel que serão inicializados com a máquina (boot):
+
+```
+sudo nano /etc/modules-load.d/k8s.conf
+```
+Adicionar os 2 módulos no arquivo:
+overlay
+br_netfilter 
+
+Recarregar os módulos:
+```
+sudo modprobe overlay
+sudo modprobe br_netfilter
+```
+Parametrização do Kernel:
+
+```
+sudo nano /etc/sysctl.d/k8s.conf
+```
+Adicionar os parâmetros:
+net.ipv4.ip_forward = 1# habilitar encaminhamento de pacotes
+net.bridge.bridge-nf-call-iptables = 1 # habilitar modo brigde ipv4
+net.bridge.bridge-nf-call-ip6tables = 1
+
+Aplicar as mudanças:
+```
+sudo sysctl --system
+```
+
+Instalando pacotes adicionais e o Kubernetes:
+```
+sudo apt-get update
+sudo apt-get install apt-transport-https curl -y
+# Carregar a chave para instalação dos pacotes do k8s
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+# Adicionar o pacote do Kubernetes no arquivo "kubernetes.list"
+echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+# Atualizar
+sudo apt-get update
+# Instalar os pacotes
+sudo apt-get install -y kubelet kubeadm kubectl
+# Adicionar os pacotes para não atualizar automaticamente, evitar quebrar o cluster
+sudo apt-mark hold kubelet kubeadm kubectl
+
+```
+
