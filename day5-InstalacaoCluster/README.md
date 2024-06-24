@@ -105,9 +105,9 @@ Parametrização do Kernel:
 sudo nano /etc/sysctl.d/k8s.conf
 ```
 Adicionar os parâmetros:
-net.ipv4.ip_forward = 1# habilitar encaminhamento de pacotes
-net.bridge.bridge-nf-call-iptables = 1 # habilitar modo brigde ipv4
-net.bridge.bridge-nf-call-ip6tables = 1
+- net.ipv4.ip_forward = 1# habilitar encaminhamento de pacotes
+- net.bridge.bridge-nf-call-iptables = 1 # habilitar modo brigde ipv4
+- net.bridge.bridge-nf-call-ip6tables = 1
 
 Aplicar as mudanças:
 ```
@@ -134,5 +134,39 @@ sudo apt-get install -y kubelet kubeadm kubectl
 # Adicionar os pacotes para não atualizar automaticamente, evitar quebrar o cluster
 sudo apt-mark hold kubelet kubeadm kubectl
 
+```
+Instalando *container runtime* - *containerd*
+
+```
+sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+# Copiar a chave do repositório do docker para acessar o repositório assinado
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Baixar o conteúdo
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+#Instalar containerd
+sudo apt-get update && sudo apt-get install -y containerd.io
+```
+
+Configurar o *containerd*
+
+```
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+
+#Alterando a configuração do SystemdCgroup para 'true'
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+
+sudo systemctl restart containerd
+sudo systemctl status containerd
+sudo systemctl enable containerd
+```
+
+Habilitar o kubelet
+
+```
+# Início automático com o sistema
+sudo systemctl enable --now kubelet
 ```
 
