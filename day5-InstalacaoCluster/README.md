@@ -62,7 +62,7 @@ sudo apt remove ibus
 Para conectar nas instâncias, selecione uma por vez e clique em "Conectar", na aba "Cliente SSH", copie o comando *ssh -i*... e cole em cada um dos terminais.
 Uma vez conectado mude o hostname de cada máquina para facilitar a identificação.
 
-```
+```bash
 sudo su
 hostnamectl hostname k8s-controlplane #maquina1
 hostnamectl hostname k8s-worker1 #maquina2
@@ -115,7 +115,7 @@ sudo sysctl --system
 ```
 
 Instalando pacotes adicionais e o Kubernetes:
-```
+```bash
 sudo apt-get update
 sudo apt-get install apt-transport-https curl -y
 
@@ -135,9 +135,9 @@ sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 ```
-Instalando *container runtime* - *containerd*
+### Instalando *container runtime* - *containerd*
 
-```
+```bash
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
 
 # Copiar a chave do repositório do docker para acessar o repositório assinado
@@ -150,9 +150,9 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] 
 sudo apt-get update && sudo apt-get install -y containerd.io
 ```
 
-Configurar o *containerd*
+#### Configurar o *containerd*
 
-```
+```bash
 sudo containerd config default | sudo tee /etc/containerd/config.toml
 
 #Alterando a configuração do SystemdCgroup para 'true'
@@ -170,3 +170,170 @@ Habilitar o kubelet
 sudo systemctl enable --now kubelet
 ```
 
+### Inicializando o cluster
+
+Inicializar a partir do nodo 1 do controlplane:
+
+```
+# Init para iniciar, passar rede que vai ser usada e a interface de rede que o kubeadm vai usar para comunicar com demais nós
+sudo kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=<O IP QUE VAI FALAR COM OS NODES>
+```
+É possível passar outros parâmetros no *kubeadm init* de acordo de como será a configuração do seu cluster, setando
+
+&nbsp;
+
+Após execução o próprio retorno do comando irá mostrar novos comando a serem executados, que são basicamente:
+Como acessar o cluster com usuário regular ou root, como fazer um deploy de um POD e como fazer o deploy de um nodo worker, usando um usuário root:
+
+```bash
+
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 172.31.57.89:6443 --token if9hn9.xhxo6s89byj9rsmd \
+	--discovery-token-ca-cert-hash sha256:ad583497a4171d1fc7d21e2ca2ea7b32bdc8450a1a4ca4cfa2022748a99fa477 
+
+```
+
+Essa configuração é necessária para que o kubectl possa se comunicar com o cluster, pois quando estamos copiando o arquivo `admin.conf` para o diretório `.kube` do usuário, estamos copiando o arquivo com as permissões de root, esse é o motivo de executarmos o comando `sudo chown $(id -u):$(id -g) $HOME/.kube/config` para alterar as permissões do arquivo para o usuário que está executando o comando.
+
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+##### Entendendo o arquivo admin.conf
+
+- É um arquivo de configuração do kubectl, que é o cliente de linha de comando do Kubernetes. Ele é usado para se comunicar com o cluster Kubernetes.
+
+```yaml
+apiVersion: v1
+
+#A seção clusters contém informações sobre os clusters Kubernetes que você deseja acessar, como o endereço do servidor API e o certificado de autoridade. Neste arquivo, há somente um cluster chamado kubernetes, que é o cluster que acabamos de criar.
+clusters:
+- cluster:
+    certificate-authority-data: SEU_CERTIFICADO_AQUI
+    server: https://172.31.57.89:6443
+  name: kubernetes
+
+#seção contexts define configurações específicas para cada combinação de cluster, usuário e namespace. Pode ter mais de um contexto dentro do `admin.conf`, por exemplo, um para o cluster de produção outro para homologação. Nesse caso, ele é chamado kubernetes-admin@kubernetes e combina o cluster kubernetes com o usuário kubernetes-admin.
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+
+#A propriedade current-context indica o contexto atualmente ativo, ou seja, qual combinação de cluster, usuário e namespace será usada ao executar comandos kubectl. Neste arquivo, o contexto atual é o kubernetes-admin@kubernetes.
+current-context: kubernetes-admin@kubernetes
+
+kind: Config
+
+#A seção preferences contém configurações globais que afetam o comportamento do kubectl. Aqui podemos definir o editor de texto padrão, por exemplo.
+preferences: {}
+
+#A seção users contém informações sobre os usuários e suas credenciais para acessar os clusters. Neste arquivo, há somente um usuário chamado kubernetes-admin. Ele contém os dados do certificado de cliente e da chave do cliente.
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: SUA_CHAVE_PUBLICA_AQUI
+    client-key-data: SUA_CHAVE_PRIVADA_AQUI
+```
+
+Credenciais usadas para autenticar o usuário:
+
+- **Token de autenticação**:Token de acesso que é usado para autenticar o usuário que está executando o comando kubectl. Gerado automaticamente quando o cluster é inicializado.
+
+- **certificate-authority-data**: Certificado em base64 da autoridade de certificação (CA) do cluster. Responsável por assinar e emitir certificados para o cluster. Usado para verificar a autenticidade dos certificados apresentados pelo servidor de API e pelos clientes, garantindo que a comunicação entre eles seja segura e confiável. Pode ser encontrado em: /etc/kubernetes/pki/ca.crt.
+
+- **client-certificate-data**: Certificado do cliente. Usado para autenticar o usuário ao se comunicar com o servidor de API do Kubernetes. Contém informações do usuário e a chave pública. Pode ser encontrado em: /etc/kubernetes/pki/apiserver-kubelet-client.crt.
+
+- **client-key-data**: Chave privada do cliente. A chave privada é usada para assinar as solicitações enviadas ao servidor de API do Kubernetes, permitindo que o servidor verifique a autenticidade da solicitação. Pode ser encontrado em: /etc/kubernetes/pki/apiserver-kubelet-client.key.
+
+Outra forma de acessar o `admin.conf`:
+```bash
+kubectl config view
+```
+#### Adicionar 2 workers no cluster
+
+Executar o comando que retornou na inicialização do cluster, com o kubeadm.
+
+Executar em cada nodo:
+```bash
+sudo kubeadm join 172.31.57.89:6443 --token if9hn9.xhxo6s89byj9rsmd \
+	--discovery-token-ca-cert-hash sha256:ad583497a4171d1fc7d21e2ca2ea7b32bdc8450a1a4ca4cfa2022748a99fa477 
+```
+
+- **kubeadm join**: Adicionar um novo nó ao cluster.
+ **172.31.57.89:6443**: Endereço IP e porta do servidor de API do control plane
+ - **--token if9hn9.xhxo6s89byj9rsmd**: O token para o worker no CP durante o processo de adesão. Dão gerados pelo CP e têm uma validade limitada (por padrão, 24 horas).
+ - **--discovery-token-ca-cert-hash sha256:ad583497a4171d1fc7d21e2ca2ea7b32bdc8450a1a4ca4cfa2022748a99fa477**: Hash criptografado do CA do control plane. Ele é usado para garantir que o nó worker esteja se comunicando com o control plane correto e autêntico.
+
+Ver novos nodos. Perceber se estão com status `Ready`:
+ ```bash
+kubectl get nodes
+```
+##### Instalando o Weave Net
+
+Instalar o plugin de rede que vai criar a rede de comunicação entre os pods.
+Por padrão, o k8s não resolve a rede automaticamente, por isso precisa ser instalado um plugin adicional.
+
+**CNI** - conjunto de bibliotecas e especificações para interface de rede em containers, para criar plugins para soluções de rede integradas com k8s.
+
+Exemplos de plugins de mercado:
+
+- **Calico** um dos mais populares e utilizado no k8s. [https://github.com/projectcalico/calico](https://github.com/projectcalico/calico)
+
+- **Flannel** simples e fácil de configurar, projetado para o Kubernetes. [https://github.com/flannel-io/flannel](https://github.com/flannel-io/flannel)
+
+- **Weave** é outra solução popular de rede para Kubernetes.[https://github.com/weaveworks/weave]()
+
+- **Cilium** é um plugin de rede novo focado em segurança e desempenho. oferece recursos avançados, como balanceamento de carga, monitoramento e solução de problemas de rede. [https://cilium.io/](https://cilium.io/)
+
+- **Kube-router** é uma solução de rede leve para Kubernetes.
+
+Nesse caso vamos testar com `Weave Net`. Executar somente no Control Plane:
+
+```
+$ kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+```
+**Não esquecer de liberar as portas do Weave Net**, nesse caso temos que fazer a liberação na AWS.
+
+&nbsp;
+Portas: 6783 TCP e 6784 UDP
+
+&nbsp;
+Se não houver a liberação os pods não irão subir.
+
+Verificar a os pods do `Weave Net` após a instalação:
+```
+kubectl get pods -n kube-system
+```
+
+Para verificar se os pods de aplicações estão sendo criados corretamente após a instalação do cluster e plugin de rede, pode instalar uma API e validar:
+
+```
+kubectl create deployment nginx --image=nginx --replicas=3
+kubectl get pods -o wide
+```
+Ver detalhes dos nodos criados:
+
+```
+kubectl get nodes -o wide
+kubectl describe nodes k8s-01 -o wide 
+```
