@@ -117,13 +117,13 @@ sudo sysctl --system
 Instalando pacotes adicionais e o Kubernetes:
 ```bash
 sudo apt-get update
-sudo apt-get install apt-transport-https curl -y
+sudo apt-get install apt-transport-https ca-certificates curl -y
 
 # Carregar a chave para instalação dos pacotes do k8s
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
 
 # Adicionar o pacote do Kubernetes no arquivo "kubernetes.list"
-echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 # Atualizar
 sudo apt-get update
@@ -135,6 +135,10 @@ sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 ```
+
+**Nota**: Em versões anteriores ao Debian 12 e Ubuntu 22.04, o /etc/apt/keyrings não existe por padrão. Você pode criar este diretório se precisar, tornando-o visível para todos, mas com permissão de escrita apenas aos administradores.
+
+
 ### Instalando *container runtime* - *containerd*
 
 ```bash
