@@ -114,27 +114,28 @@ Aplicar as mudanças:
 sudo sysctl --system
 ```
 
-Instalando pacotes adicionais e o Kubernetes:
+Instalando pacotes adicionais e o Kubernetes versão 1.28.1:
 ```bash
 sudo apt-get update
 sudo apt-get install apt-transport-https ca-certificates curl -y
 
 # Carregar a chave para instalação dos pacotes do k8s
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 # Adicionar o pacote do Kubernetes no arquivo "kubernetes.list"
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 # Atualizar
 sudo apt-get update
 
 # Instalar os pacotes
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt install -y kubeadm=1.28.1-1.1 kubelet=1.28.1-1.1 kubectl=1.28.1-1.1
 
 # Adicionar os pacotes para não atualizar automaticamente, evitar quebrar o cluster
 sudo apt-mark hold kubelet kubeadm kubectl
 
 ```
+**Nota**: Para instalar versão 1.29.1 executar os mesmos comandos mudando o versionamento.
 
 **Nota**: Em versões anteriores ao Debian 12 e Ubuntu 22.04, o /etc/apt/keyrings não existe por padrão. Você pode criar este diretório se precisar, tornando-o visível para todos, mas com permissão de escrita apenas aos administradores.
 
