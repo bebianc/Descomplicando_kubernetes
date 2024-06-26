@@ -221,6 +221,8 @@ Essa configuração é necessária para que o kubectl possa se comunicar com o c
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+export KUBECONFIG=$HOME/.kube/config/config
+
 ```
 
 ##### Entendendo o arquivo admin.conf
@@ -315,7 +317,7 @@ Exemplos de plugins de mercado:
 Nesse caso vamos testar com `Weave Net`. Executar somente no Control Plane:
 
 ```
-$ kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
 ```
 **Não esquecer de liberar as portas do Weave Net**, nesse caso temos que fazer a liberação na AWS.
 
@@ -340,5 +342,5 @@ Ver detalhes dos nodos criados:
 
 ```
 kubectl get nodes -o wide
-kubectl describe nodes k8s-01 -o wide 
+kubectl describe nodes k8s-controlplane
 ```
