@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: giro
+provisioner: kubernetes.io/no-provisioner # indica que o provisioner será criado manualmente
+reclaimPolicy: Retain  # ira guardar o dado
+volumeBindingMode: WaitForFirstConsumer
