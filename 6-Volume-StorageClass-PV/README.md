@@ -79,6 +79,7 @@ Comandos:
 ```
 Verificar exemplo do manifesto `persistentvolume.yaml`.
 
+"Recycle" é a política de reivindicação de PersistentVolume (PV) faz com que o PV seja excluído quando o PersistentVolumeClaim (PVC) for excluído, mas antes disso, ele será limpo, ou seja, todos os dados serão apagados.
 
 **Configurando um servidor NFS integrando com PV**
 
