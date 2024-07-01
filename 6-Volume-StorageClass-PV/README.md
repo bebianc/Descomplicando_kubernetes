@@ -135,5 +135,33 @@ Exemplo de um manifesto k8s PV com NFS acima.
 
 
 **PersistentVolumeClaim** *PVC*: É o recurso que solicitará para o StorageClass o pedaço de armazenamento (PV) para uso.
+Permite que os usuários ou aplicação solicitem um volume específicom com base no tamanho, tipo de armazenamento...
 
+O Kubernetes irá entregar o melhor disco disponível seguindo as configurações do PVC.
+
+Exemplo de manifesto PVC em pvc.yaml.
+
+Com o PVC pronto, como a regra definimos a regra `volumeBindingMode: WaitForFirstConsumer` no Storage Class "giro", temos que configurar uma API para usar esse PV.
+
+Criando um Pod para solicitar um PVC.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+  - name: nginx
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: pvc #de acordo com o nome do pvc
+      mountPath: /usr/share/nginx/html
+  volumes:
+  - name: pvc
+    persistentVolumeClaim:
+      claimName: pvc
+```
 

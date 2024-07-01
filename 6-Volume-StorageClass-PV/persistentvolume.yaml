@@ -11,7 +11,7 @@ spec:
     - ReadWriteOnce #Disponivel para Leitura e escrita por um unico nó
     # - ReadWriteMany #Disponivel para leitura e escrita em varios nós
     # - ReadOnlyMany #O PV Pode ser montado em varios nós, porém somente leitura
-  PersistentVolumeReclaimPolicy: Retain #Reter os dados, não serão excluidos
+  persistentVolumeReclaimPolicy: Retain #Reter os dados, não serão excluidos
                                  # Recycle # Os dados serão limpos e o PV será excluido quando o PVC for excluído.
                                  # Delete
   hostPath: # volume local
