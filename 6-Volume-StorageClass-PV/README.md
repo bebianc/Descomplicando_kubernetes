@@ -7,7 +7,7 @@ Tipos de Volumes:
  - `Persistent volumes`: são volumes criados e não são destruídos junto com o Pod. Exemplo, o `StorageClass` que provisiona os PVs (PersistentVolumes) e PVCs (PersistentVolumeClaims)
  
 
- **StorageClass** (classe de storage) é uma forma de categorizar ou descrever uma classe de disco/armazenamento, que pode ser criada pelos administradores do cluster, para permitir que os usuários escolham a classe adequada para sua necessidade sobre o tipo de armazenamento.
+ **StorageClass** (classe de storage) é uma forma de categorizar ou descrever uma classe de disco/armazenamento, que pode ser criada pelos administradores do cluster, para permitir que os usuários escolham a classe adequada para sua necessidade sobre o tipo de armazenamento, políticas de retenção de disco e outras características específicas de armazenamento.
  
 Cada StorageClass contém os campos `provisioner`, `parameters` e `reclaimPolicy`, que são usados para automatizar e gerenciar a criação dos PVs (PersistentVolume), através dos `provisioners`. Os PVs são provisionados dinamicamente de acordo com os requisitos dos PersistentVolumeClains (PVCs).
 
