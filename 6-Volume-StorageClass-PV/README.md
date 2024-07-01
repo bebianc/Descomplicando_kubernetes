@@ -68,6 +68,9 @@ Os dados não são perdidos se o container é reiniciado ou movido.
   - armazenamento em rede: NFS (*Network File System*), diretório compartilhado na rede para o uso do cluster. ISCI permite conexão de dispositivos de armazenamento via rede IP.
   - armazenamento em nuvem: AWS Elastic Block Store (EBS), Azure Disk, Google Compute Engine (GCE) Persistent Disk.
 
+Exemplo de host-path:
+Um cluster Kubernetes com dois nós (Node A e Node B) e um volume persistente (PV) criado com o provisionador HostPath. Um aplicativo está utilizando um PVC vinculado a esse PV e atualmente está em execução no Node A.se o aplicativo for movido do Node A para o Node B. Os dados não estarão disponíveis no Node B, pois o HostPath armazena os dados apenas no nó específico onde o PV foi criado.
+
 Lista de tipos de armazenamentos suportados:
 [Kubernetes Docs](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#types-of-persistent-volumes).
 
