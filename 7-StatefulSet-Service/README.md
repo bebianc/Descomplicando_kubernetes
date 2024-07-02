@@ -25,3 +25,5 @@
 
 Por exemplo: Um StatefulSet com 3 réplicas, ele criará os Pods com hostname: meupod-0, meupod-1, meupod-2. E o meupod-1 não será iniciado até que o Pod meupod-0 está disponível e pronto. Isso garante a ordem no deploy, scaling e updates.
 
+Exemplo de manifesto *StatefulSet* em statefulset.yaml.
+
