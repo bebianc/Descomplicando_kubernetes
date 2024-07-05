@@ -99,8 +99,8 @@ kubectl expose deployment nginx-service
 kubectl get svc
 kubectl get endpoints #Se escalar mais de uma replica, o Service saberá para qual encaminhar a requisição de acordo com os endereços dos ENDPOINTS.
 ```
-
-Vinculando o Deployment a um Service tipo `**NodePort**`:
+**NodePort**:
+Vinculando o Deployment a um Service tipo `NodePort`:
 ```bash
 kubectl expose deployment nginx-service --type NodePort
 kubectl get svc
@@ -117,5 +117,27 @@ NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   S
 kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP        42d   <none>
 nginx-service   NodePort    10.96.114.171   <none>        80:30234/TCP   98s   app=nginx-service
 ```
+**LoadBalancer**
 
+Para testar o tipo LoadBalancer utilizando um cloud provider, pode subir um AWS -EKS, Google Cloud - GKE, Azure - AKS. Nesse caso vamos subir um cluster EKS na AWS.
 
+Comando exemplo para criar um cluster EKS:
+```bash
+eksctl create cluster --name=eks-cluster-1 --version=1.23 --region=us-east-1 --nodegroup-name=eks-cluster-nodegroup --node-type=t3.medium --nodes=2 --nodes-min=1 --nodes-max=3 --managed
+```
+Quando criado o cluster e um deployment no cluster, basta expor a o deployment com tipo LoadBalancer, e acompanhar com "get svc", verá que será atribuido ao Service um endereço do LB na AWS, no campo EXTERNAL-IP:
+```bash
+kubectl expode deployment nginx-service --type=LoadBalancer --port=80 --target-port=8080
+kubectl get svc
+```
+Se acessar o endereço do LB no browser, aguardando o tempo de propagação do DNS, conseguirá acessar a página do Nginx.
+
+*Testar também com MetalLB*
+
+**ExternalName**
+```bash
+#Quando não referenciado um deployment para o Service é usado o "create"
+kubectl create service externalname bancodedados --external-name db.bancodedados.com.br
+kubectl get svc
+```
+Irá retornar um serviço com tipo ExternalName e com EXTERNAL-IP o DNS do banco.
