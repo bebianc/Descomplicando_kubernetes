@@ -88,6 +88,7 @@ Tipos de Service:
 
 Exemplo de como criar um Service por comando. Lembrando que o recomendado é via manifesto.
 
+**ClusterIP**
 Criar um deploy para vincular a um Service do tipo `ClusterIP`:
 ```bash
 kubectl create deployment nginx-service --image=nginx --port=80
