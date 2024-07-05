@@ -100,7 +100,7 @@ kubectl get svc
 kubectl get endpoints #Se escalar mais de uma replica, o Service saberá para qual encaminhar a requisição de acordo com os endereços dos ENDPOINTS.
 ```
 
-Vinculando o Deployment a um Service tipo `NodePort`:
+Vinculando o Deployment a um Service tipo `**NodePort**`:
 ```bash
 kubectl expose deployment nginx-service --type NodePort
 kubectl get svc
