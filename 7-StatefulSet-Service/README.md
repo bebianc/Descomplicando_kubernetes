@@ -77,8 +77,6 @@ Eles mantêm um endereço IP estável e uma porta de serviço que permanecem con
 ```bash
 kubectl get endpoints meu-service
 ```
-
-
 Tipos de Service:
  - **ClusterIP**: Será atribuído ao Service um IP local para comunicação interna do cluster.
  - **NodePort**: Reserva uma porta no nodo e expõe o Service na mesma porta. A requisição externa que foi feita para essa porta reservada, será direcionada para acesso interno ao cluster. Isso é feito através do protocolo NAT. Portas disponíves para o NodePort 30000 a 32767. Importante se atentar a liberação no firewall.
@@ -100,6 +98,8 @@ kubectl expose deployment nginx-service
 kubectl get svc
 kubectl get endpoints #Se escalar mais de uma replica, o Service saberá para qual encaminhar a requisição de acordo com os endereços dos ENDPOINTS.
 ```
+Exemplo de manifesto ClusterIP em *nginx-clusterIP-svc.yaml*
+
 **NodePort**:
 Vinculando o Deployment a um Service tipo `NodePort`:
 ```bash
@@ -118,6 +118,8 @@ NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   S
 kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP        42d   <none>
 nginx-service   NodePort    10.96.114.171   <none>        80:30234/TCP   98s   app=nginx-service
 ```
+Exemplo de manifesto NodePort em *nginx-nodePort-svc.yaml*
+
 **LoadBalancer**
 
 Para testar o tipo LoadBalancer utilizando um cloud provider, pode subir um AWS -EKS, Google Cloud - GKE, Azure - AKS. Nesse caso vamos subir um cluster EKS na AWS.
@@ -133,6 +135,8 @@ kubectl get svc
 ```
 Se acessar o endereço do LB no browser, aguardando o tempo de propagação do DNS, conseguirá acessar a página do Nginx.
 
+Exemplo de manifesto LoadBalancer em *nginx-loadBalancer-svc.yaml*
+
 *Testar também com MetalLB*
 
 **ExternalName**
@@ -142,3 +146,20 @@ kubectl create service externalname bancodedados --external-name db.bancodedados
 kubectl get svc
 ```
 Irá retornar um serviço com tipo ExternalName e com EXTERNAL-IP o DNS do banco.
+
+**Criando um Service apontando para outro Service**
+
+Expor um Service já criado, a partir de um outro Service, pode ser uma estratégia para fazer um troubleshooting na sua estrutura, com algum problema relacionado com uma API que não está funcionando corretamente ou uma nova instalação que precisa ser validada. Nesse caso criamos um novo Service com outro tipo, para a API ser acessada de fora do cluster, sem mudar a configuração de Service original dela.
+Você também pode ter mais de um Service de outro tipo para o seu Pod, Deployment, Sts, Ds, ReplicaSet...para que o recurso seja acessado de diferentes formas, ou seja, tendo um Service tipo ClusterIP e outro tipo NodePort, o seu Pod poderá ser acessado tanto pela rede interna da sua organização por você ou por outra API, quanto internamente, por outros Pods. Ou também um tipo LoadBalancer para acesso via internet.
+
+Como funciona:
+```bash
+#Verificar quais services criados e são atrelados ao deployment da API
+kubectl get svc -n namespace_app
+#Digamos que a API está vinculada a Service do tipo ClusterIP e vc precisa expor esse Service para acesso fora do cluster
+kubectl expose service --name nome_novo_service nome_service_exposto --type NodePort
+#Se dar um get, verá que a porta do novo Service estará apontando para a porta do Service ClusterApi que queremos usar e as requisições são direcionadas para ela
+kubectl get svc
+```
+**Dica**: para criar manifestos do Kubernetes com autocomplete, use o plugin do Kubernetes com Vs Code.
+
