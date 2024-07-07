@@ -4,7 +4,7 @@
 
 - Conceito de `stateful`: Aplicação que guardam o seu estado atual e são executadas novamente com base no contexto das transações anteriores. Se uma transação stateful for interrompida, você conseguirá retomá-la praticamente de onde parou, pois os dados são armazenados.
 
-- O `statefulSet` é o objeto API de *workload* usado para gerenciar aplicações *stateful*. Gerencia o deploy e escalonamento dos Pods e fornece garantias sobre a ordem e exclusividade desses Pods.
+- O `statefulSet` é o objeto API de *workload* usado para gerenciar aplicações *stateful*. Gerencia o deploy e escalonamento dos Pods e fornece garantias sobre a ordem e exclusividade desses Pods. É uma maneira de gerenciar um conjunto de Pods replicados.
 
 - Usado em aplicações que requerem um ou mais desses:
   - Único identificador de rede estável.
@@ -66,12 +66,17 @@ Pod 0
 ```
 Para deletar os recursos criados, basta dar um delete nos STS, SVC e nos três PVCs. Assim que os PVCs forem deletados, os PVs serão deletados automaticamente.
 
+Deletar o StatefulSet sem deletar os Pods:
+```bash
+kubectl delete statefulset meu-statefulset --cascade=false
+```
+
 # Services
 
 - Permite que os Pods sejam acessados de fora do cluster ou de fora da rede.
 - Para cada replica de Pod criada, o Service irá distribuir as requisições para cada uma.
 - O Service fornece uma abstração que define um conjunto lógico de Pods e uma política para a cessá-los. O conjunto de Pods são determinados por meio de Label Selectors. Importante as Labels de cada recurso do Kubernetes estarem bem definidas, para que o Service possa saber qual é o Pod que ele precisa direcionar a requisição. Se por exemplo, duas APIs diferentes estiverem com a mesma Label acidentalmente, o Service vai direcionar as requisições para as duas APIs e podemos ter um problema.
-- Quando criado um Service, é criado um ENDPOINT, que é o endereço IP para comunicação com o Pod. Esse objeto Endpoint rastreia os IPs e as portas dos Pods que correspondem aos critérios de seleção do Service.
+- Quando criado um Service, é criado um ENDPOINT, que é o endereço IP para comunicação com o Pod. Esse objeto Endpoint rastreia os IPs e as portas dos Pods que correspondem aos critérios de seleção do Service. Eles são responsáveis por manter o mapeamento entre o Service e os Pods que ele está expondo.
 Eles mantêm um endereço IP estável e uma porta de serviço que permanecem constantes ao longo do tempo, mesmo que os Pods subjacentes sejam substituídos.
 
 ```bash
@@ -83,6 +88,7 @@ Tipos de Service:
  - **LoadBalancer**: Cria um balanceador de carga externo no ambiente e atribui um IP fixo, externo ao cluster, ao Service. Interessante criar um Service LoadBalancer quando estiver usando um Cloud Provider, um EKS, por exemplo, onde o Control Plane é executado a partir da AWS, assim o service se comunica com a AWS e é criado um LB automaticamente para ser acessado.
    - Caso não esteja utilizando um Cloud Provider, é possível integrar o Service LoadBalancer com uma ferramenta de LB local instalada no Cluster kubernetes, por exemplo `MetalLB`, aonde ele vai entregar para o Service LoadBalancer um range de IP definido.
  - **ExternalName**: Mapeia o Service para o conteúdo do campo externalName (por exemplo, foo.bar.example.com), retornando um registro CNAME com seu valor. Um Service ExternalName é um serviço para um recurso externo, por exemplo um banco de dados que está fora do cluster kubernetes. Nesse caso o nome do serviço será o endereço externo do banco, e os Pods que estiverem com esse nome de serviço vinculados, conseguirão acessar o banco externo atráves desse ALIAS vinculado ao endereço do banco.
+ Outro uso comum para ExternalName é quando você tem ambientes diferentes, como produção e desenvolvimento, que possuem serviços externos diferentes. Você pode usar o mesmo nome de serviço em todos os ambientes, mas apontar para diferentes endereços externos.
 
 Exemplo de como criar um Service por comando. Lembrando que o recomendado é via manifesto.
 
@@ -136,6 +142,8 @@ kubectl get svc
 Se acessar o endereço do LB no browser, aguardando o tempo de propagação do DNS, conseguirá acessar a página do Nginx.
 
 Exemplo de manifesto LoadBalancer em *nginx-loadBalancer-svc.yaml*
+
+Esse tipo de Service pode ser considerado quando deseja expor um serviço a ser acessado externamente por usuários ou sistemas que não estão dentro do seu cluster Kubernetes. 
 
 *Testar também com MetalLB*
 
