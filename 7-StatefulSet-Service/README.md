@@ -76,7 +76,7 @@ kubectl delete statefulset meu-statefulset --cascade=false
 - Permite que os Pods sejam acessados de fora do cluster ou de fora da rede.
 - Para cada replica de Pod criada, o Service irá distribuir as requisições para cada uma.
 - O Service fornece uma abstração que define um conjunto lógico de Pods e uma política para a cessá-los. O conjunto de Pods são determinados por meio de Label Selectors. Importante as Labels de cada recurso do Kubernetes estarem bem definidas, para que o Service possa saber qual é o Pod que ele precisa direcionar a requisição. Se por exemplo, duas APIs diferentes estiverem com a mesma Label acidentalmente, o Service vai direcionar as requisições para as duas APIs e podemos ter um problema.
-- Quando criado um Service, é criado um ENDPOINT, que é o endereço IP para comunicação com o Pod. Esse objeto Endpoint rastreia os IPs e as portas dos Pods que correspondem aos critérios de seleção do Service. Eles são responsáveis por manter o mapeamento entre o Service e os Pods que ele está expondo.
+- Quando criado um Service, é criado um **ENDPOINT**, que é o endereço IP para comunicação com o Pod. Esse objeto Endpoint rastreia os IPs e as portas dos Pods que correspondem aos critérios de seleção do Service. Eles são responsáveis por manter o mapeamento entre o Service e os Pods que ele está expondo.
 Eles mantêm um endereço IP estável e uma porta de serviço que permanecem constantes ao longo do tempo, mesmo que os Pods subjacentes sejam substituídos.
 
 ```bash
