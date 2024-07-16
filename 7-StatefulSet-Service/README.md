@@ -46,6 +46,9 @@ nginx-persistent-storage-nginx-1   Bound    pvc-221fafac-cc6d-45f6-849f-96a9482b
 nginx-persistent-storage-nginx-2   Bound    pvc-338e19d9-e2d8-40da-a385-066749be6a93   1Gi        RWO            standard       <unset>                 22h
 ```
 
+Outro detalhe é que é importante especificar no MountPath do Volume o caminho correto que a aplicação irá executar. 
+Por exemplo: nginx - /usr/share/nginx/html ; apache - /var/www/html
+
 **Criando um Service Headless**
 
 Necessário criar um service headless para vincular ao StatefulSet, para a comunicação entre os Pods, usando o DNS local de cada Pod, ao invés de IP.
@@ -146,6 +149,8 @@ Exemplo de manifesto LoadBalancer em *nginx-loadBalancer-svc.yaml*
 Esse tipo de Service pode ser considerado quando deseja expor um serviço a ser acessado externamente por usuários ou sistemas que não estão dentro do seu cluster Kubernetes. 
 
 *Testar também com MetalLB*
+
+https://metallb.universe.tf/installation/
 
 **ExternalName**
 ```bash
