@@ -148,9 +148,58 @@ Exemplo de manifesto LoadBalancer em *nginx-loadBalancer-svc.yaml*
 
 Esse tipo de Service pode ser considerado quando deseja expor um serviço a ser acessado externamente por usuários ou sistemas que não estão dentro do seu cluster Kubernetes. 
 
-*Testar também com MetalLB*
+**MetalLB**
 
-https://metallb.universe.tf/installation/
+MetalLB se conecta ao seu cluster Kubernetes e fornece uma implementação de balanceador de carga de rede. Ele permite criar serviços Kubernetes do tipo LoadBalancer em clusters que não possuem um balanceador de carga de um cloud provider.
+
+Possui dois recursos que funcionam juntos para fornecer este serviço: address allocation e external announcement.
+
+```Address Allocation```: Em um cluster Kubernetes em um provedor de nuvem, você solicita um balanceador de carga e sua plataforma de nuvem atribui um endereço IP a você. Em um cluster bare-metal, o MetalLB é responsável por essa alocação. O MetalLB não pode criar endereços IP do nada, então você precisa fornecer conjuntos de endereços IP que ele possa usar. O MetalLB se encarregará de atribuir e cancelar a atribuição de endereços individuais à medida que os serviços vão e vêm, mas só distribuirá IPs que façam parte de seus pools configurados. A forma como você obtém pools de endereços IP para MetalLB depende do seu ambiente. Seu provedor de hospedagem provavelmente oferece endereços IP para locação. Nesse caso, você alugaria, digamos, um /26 de espaço IP (64 endereços) e forneceria esse intervalo ao MetalLB para serviços de cluster. Alternativamente, seu cluster pode ser privado, fornecendo serviços para uma LAN próxima, mas não exposto à Internet. Nesse caso, você poderia escolher um intervalo de IPs de um dos espaços de endereço privados (os chamados endereços RFC1918) e atribuí-los ao MetalLB. Esses endereços são gratuitos e funcionam bem, desde que você forneça apenas serviços de cluster para sua LAN. Ou você pode fazer as duas coisas! MetalLB permite definir quantos pools de endereços você quiser e não se importa com o “tipo” de endereços que você fornece.
+
+```External announcement```: Depois que o MetalLB atribui um endereço IP externo a um serviço, ele precisa conscientizar a rede além do cluster de que o IP “vive” no cluster. MetalLB usa rede padrão ou protocolos de roteamento para conseguir isso, dependendo do modo usado: ARP, NDP ou BGP.
+
+  ```Modo camada 2```: No modo de camada 2, uma máquina no cluster assume a propriedade do serviço e usa protocolos padrão de descoberta de endereços (ARP para IPv4, NDP para IPv6) para tornar esses IPs acessíveis na rede local. Do ponto de vista da LAN, a máquina anunciadora simplesmente possui vários endereços IP.
+Mais informações do [modo camada 2](https://metallb.universe.tf/concepts/layer2/)
+
+  ```BGP```: No modo BGP, todas as máquinas no cluster estabelecem sessões de peering BGP com roteadores próximos que você controla e informam a esses roteadores como encaminhar o tráfego para os IPs de serviço. O uso do BGP permite um verdadeiro balanceamento de carga em vários nós e um controle de tráfego refinado graças aos mecanismos de política do BGP. Mais informações do modo [BGP](https://metallb.universe.tf/concepts/bgp/)
+
+```Requisitos de instalação```:
+ - Kubernetes versão 1.13 ou superior
+ - Uma configuração de rede de cluster que pode coexistir com o MetalLB. Exemplo: Calico, Flannel, Cilium, Weave Net...
+ - Alguns endereços IPv4 para MetalLB distribuir.
+ - Ao usar o modo operacional BGP, você precisará de um ou mais roteadores capazes de falar BGP.
+ - Ao usar o modo operacional L2, o tráfego na porta 7946 (TCP e UDP, outra porta pode ser configurada) deve ser permitido entre nós.
+
+ ```Preparação```:
+  - Se estiver usand kube-proxy, necessário habilitar o modo *strict ARP*: 
+   ```bash
+   kubectl edit configmap -n kube-system kube-proxy
+   ``` 
+   Setar: 
+
+   ```yaml
+        apiVersion: kubeproxy.config.k8s.io/v1alpha1
+        kind: KubeProxyConfiguration
+        mode: "ipvs"
+        ipvs:
+          strictARP: true
+   ```
+   Para automatizar essa mudança verificar a documentação: [Preparação para instalar MetalLB](https://metallb.universe.tf/installation/)
+
+`Instalação por manifesto`:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.7/config/manifests/metallb-native.yaml
+```
+Isso implantará o MetalLB em seu cluster, na namespace *metallb-system*. Os componentes do manifesto são:
+ - O deployment metallb-system/controller. Este é o cluster-wide controller (controlador do cluster todo) que lida com atribuições de endereços IP.
+- O metallb-system/speaker daemonset. Este é o componente que fala "speaker" os protocolos de sua escolha para tornar os serviços acessíveis.
+
+O manifesto de instalação não inclui um arquivo de configuração. Os componentes do MetalLB ainda serão iniciados, mas permanecerão idle até você começar a fazer o deploy dos recursos.
+
+[Integração com o Prometheus para monitoramento](https://metallb.universe.tf/installation/).
+
+`Configuração`:
+https://metallb.universe.tf/configuration/
 
 **ExternalName**
 ```bash
