@@ -1,0 +1,14 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: config-metallb
+  namespace: metallb-system
+spec:
+  addresses:
+  - 172.18.0.15-172.18.0.15 # Como estou usando um cluster instalado com Kind local, precisei adicionar um IP da minha subrede docker.
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: l2advertisement1
+  namespace: metallb-system

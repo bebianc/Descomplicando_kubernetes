@@ -196,10 +196,75 @@ Isso implantará o MetalLB em seu cluster, na namespace *metallb-system*. Os com
 
 O manifesto de instalação não inclui um arquivo de configuração. Os componentes do MetalLB ainda serão iniciados, mas permanecerão idle até você começar a fazer o deploy dos recursos.
 
+Ao fazer o deploy do o Pod do *controller* retornar erro *crashloopbackoff*, conforme abaixo: 
+
+```bash
+{"caller":"main.go:257","error":"too many open files","level":"error","msg":"failed to run k8s client","op":"startup","ts":"2024-07-20T11:32:26Z"}
+```
+
+Validar aumentar os parâmetros do sistema relacionados ao inotify, que é uma ferramenta que monitora mudanças no sistema de arquivos.
+
+Para saber os valores atuais:
+```bash
+sysctl fs.inotify.max_user_instances
+sysctl fs.inotify.max_user_watches
+```
+
+Para aumentar os valores permanentemente:
+```bash
+sudo nano /etc/sysctl.conf
+#Adicionar as linhas:
+fs.inotify.max_user_instances=1280
+fs.inotify.max_user_watches=655360
+#Aplicar a mudança
+sudo sysctl -p
+```
+Considerações: Verifique a quantidade ideal para o seu cluster, pois pode passar a consumir mais recurso.
+
 [Integração com o Prometheus para monitoramento](https://metallb.universe.tf/installation/).
 
-`Configuração`:
-https://metallb.universe.tf/configuration/
+`Configuração da definição dos IPs`:
+ - Definir os IPs a serem atribuídos aos services do Load Balancer, para isso o MetalLB deverá ser instruído a fazê-lo através do CR IPAddressPool.
+
+ ```yaml
+  apiVersion: metallb.io/v1beta1
+  kind: IPAddressPool
+  metadata:
+    name: config-metallb
+    namespace: metallb-system
+  spec:
+    addresses:
+    - 192.168.10.0/24
+    - 192.168.9.1-192.168.9.5
+    - fc00:f853:0ccd:e799::/124
+ ```
+
+- Várias instâncias de IPAddressPools podem coexistir e os endereços podem ser definidos por CIDR, por um range, e endereços IPV4 e IPV6. 
+
+`Configuração do modo camada 2`:
+- O modo Camada 2 é o mais simples de configurar: em muitos casos, não é necessária nenhuma configuração específica de protocolo, apenas endereços IP.
+- Não exige que os IPs estejam vinculados às interfaces de rede dos workers. Ele funciona respondendo diretamente às solicitações ARP na sua rede local, para fornecer o endereço MAC da máquina aos clientes.
+- Para anunciar o IP proveniente de um IPAddressPool, uma instância L2Advertisement deve estar associada ao IPAddressPool, exemplo:
+
+```yaml
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: config-metallb
+  namespace: metallb-system
+spec:
+  addresses:
+  - 192.168.0.250-192.168.0.250
+
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: example
+  namespace: metallb-system
+```
+- Se necessário definir um IP específico para o modo camada 2, pode ser usado *selector*.
+
 
 **ExternalName**
 ```bash
