@@ -196,7 +196,7 @@ Isso implantará o MetalLB em seu cluster, na namespace *metallb-system*. Os com
 
 O manifesto de instalação não inclui um arquivo de configuração. Os componentes do MetalLB ainda serão iniciados, mas permanecerão idle até você começar a fazer o deploy dos recursos.
 
-Ao fazer o deploy do o Pod do *controller* retornar erro *crashloopbackoff*, conforme abaixo: 
+Ao fazer o deploy do o Pod do *controller* e retornar erro *crashloopbackoff*, conforme abaixo: 
 
 ```bash
 {"caller":"main.go:257","error":"too many open files","level":"error","msg":"failed to run k8s client","op":"startup","ts":"2024-07-20T11:32:26Z"}
@@ -225,20 +225,6 @@ Considerações: Verifique a quantidade ideal para o seu cluster, pois pode pass
 
 `Configuração da definição dos IPs`:
  - Definir os IPs a serem atribuídos aos services do Load Balancer, para isso o MetalLB deverá ser instruído a fazê-lo através do CR IPAddressPool.
-
- ```yaml
-  apiVersion: metallb.io/v1beta1
-  kind: IPAddressPool
-  metadata:
-    name: config-metallb
-    namespace: metallb-system
-  spec:
-    addresses:
-    - 192.168.10.0/24
-    - 192.168.9.1-192.168.9.5
-    - fc00:f853:0ccd:e799::/124
- ```
-
 - Várias instâncias de IPAddressPools podem coexistir e os endereços podem ser definidos por CIDR, por um range, e endereços IPV4 e IPV6. 
 
 `Configuração do modo camada 2`:
@@ -264,6 +250,15 @@ metadata:
   namespace: metallb-system
 ```
 - Se necessário definir um IP específico para o modo camada 2, pode ser usado *selector*.
+- Exemplo do manifesto *metallb-conf.yaml* em anexo. 
+- Para validar as configurações depois de aplicadas:
+```bash
+kubectl get ipaddresspool.metallb.io/config-metallb -n metallb-system -o wide
+kubectl get l2advertisement.metallb.io/l2advertisement1 -n metallb-system -o wide
+```
+`Compatibilidade com kind`: Se o seu cluster kubernetes foi criado usando o Kind, para acessar uma API na sua máquina local com o EXTERNAL-IP do Service LoadBalancer, atribuído pelo Metallb, será necessário criar um novo cluster através do arquivo de configuração do Kind, adicionando os os parâmetros descritos no arquivo *kind-cluster-ingress.yaml*, conforme exemplo da sessão "1-Arquiteturak8s-Instalações".
+
+Após isso, será necessário criar um *Ingress Controller*, que irá habilitar o acesso externo a uma API do cluster.
 
 
 **ExternalName**

@@ -1,0 +1,24 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4 #Versao do kind usado para criar o cluster
+nodes:
+- role: control-plane
+  #A partir daqui habilitando o kind para usar um ingress controller
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  # E adicionando as portas que poderão ser acessadas fora do cluster      
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 8081
+    hostPort: 8081
+    protocol: TCP  
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP   
+- role: worker
+- role: worker
