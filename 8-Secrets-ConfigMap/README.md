@@ -50,7 +50,10 @@ kubectl get secret empty-secret
  echo -n "YWJjZGVmZyU=" | base64 -d
  ```
 
+**Criando um Secret tipo Opaque**
 - Exemplo de manifesto de `Secret tipo Opaque` em secrets-opaque.yaml.
+- `Opaque`: Mais simples, dados arbitrários e genéricos definidos pelo usuário, como senhas, tokens, certificado TLS, chaves, tudo em base64.
+
 - Para aplicar em uma namespace específica (recomendado): 
 ```bash
  kubectl apply -f secrets.opaque-yaml -n namespace
@@ -65,7 +68,7 @@ kubectl get secret empty-secret
  Parâmetro `--from-env-file` que defini o Secret a partir de uma variável de ambiente.
  O Comando `create` codifica os dados em Base64 automaticamente.
 
- - Adicionar o Secret em um Pod, via variável de ambiente, exemplo de manifest em secrets-pod.yaml.
+ - **Adicionar o Secret em um Pod**, via variável de ambiente, exemplo de manifest em secrets-pod.yaml.
  - Após adicionar é possível acessar o Pod e verificar que foi adicionado na variável de ambiente os dados USERNAME e PASSWORD:
 ```bash
 bebianc@BerUbuntu22:~/Descomplicando_kubernetes$ kubectl exec -it myapp -- env
@@ -78,3 +81,50 @@ PKG_RELEASE=2~bookworm
 PASSWORD=senhasecretopaque
 USERNAME=opaque
 ```
+
+**Criando um Secret *dockerconfigjson* para autenticar no Docker Hub e usar imagens privadas**
+
+- `kubernetes.io/dockerconfigjson`: basicamente a mesma funcão do dockercfg.
+
+- o Docker Hub ajustou as suas políticas de download (*limit rate*), com isso há uma quantidade específica de pull de imagens:
+  - Usuários não autenticados - 100 pulls por 6 horas por endereço IP
+  - Usuários auteticados- 200 pulls por 6 horas
+  - Usuários com assinatura paga na Docker - 5000 pulls por dia
+
+Nesse caso vamos criar um Secret para realizar a autenticação no Docker Hub e garantir os 200 pull de imagem por 6 horas.
+
+Se executar o comando *docker login* veremos que a autentição é automática. Isso ocorre devido o token de autenticação já está configurado.
+Você pode encontrar as configurações de autentição em:
+```
+cat $HOME/.docker/config.json
+```
+Vamos usar o conteúdo desse json para criar o nosso Secret. Primeiro vamos transformar em base64:
+```
+base64 $HOME/.docker/config.json
+```
+Criar um Secret conforme exemplo em *secrets-dockerhub.yaml*. Colar o conteúdo do config.json no parâmetro *data*, nesse manifesto.
+
+Criar um Pod para usar esse Secret para se autenticar no Docker Hub e fazer o pull da imagem privada, exemplo em *secret-pod-dockerhub.yaml*.
+
+**Criando um Secret TLS**
+
+- `kubernetes.io/tls`: Armazena o certificado TLS e associado a chave usada para TLS. 
+
+Necessitamos então de uma chave privada e um certificado TLS, para modificarmos para base64 e criar o Secret.
+Para isso seguir o comando `openssl`:
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout chave-privada.key -out certicado.crt
+```
+Parâmetro: `-nodes` para que a chave privada não seja criptografada com uma senha
+Parâmetro: `-days` para validade do certificado.
+Parâmetro: `-newkey` definir o algoritmo de criptografia da chave privada 
+
+Com isso gerou um certificado TLS (Transport Layer Security) auto-assinado que será usado para autenticar e estabelecer uma conexão segura entre cliente e servidor. E uma chave privada, que será usada para descriptografar a informação da comunicação entre as duas partes, que foi criptografada com a chave pública.
+
+Criando o Secret com certificado e chave privada:
+```bash
+kubectl create secret tls app-web-tls-secret --cert=certificado.crt --key=chave-privada.key
+```
+
+Agora para usar esse Secret TLS, podemos criar um webservice como NGINX rodando com HTTPS.
+
