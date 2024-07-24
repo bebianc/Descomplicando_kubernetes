@@ -41,7 +41,7 @@ kubectl get secret empty-secret
 **Importante lembrar**
  - Definir qual Secret usar em determinada situação.
  - Os Secrets não são criptografados, são armazenados em base64, pois é muito fácil transformar base64 para texto.
- -   
+ 
  Exemplo:
  ```bash
  # Dar um get nas informações do Secret
@@ -50,4 +50,31 @@ kubectl get secret empty-secret
  echo -n "YWJjZGVmZyU=" | base64 -d
  ```
 
+- Exemplo de manifesto de `Secret tipo Opaque` em secrets-opaque.yaml.
+- Para aplicar em uma namespace específica (recomendado): 
+```bash
+ kubectl apply -f secrets.opaque-yaml -n namespace
+ ```
 
+- Para criar esse mesmo Secret via comando:
+```bash
+ kubectl create secret generic secret-opaque --from-literal=username=<SEGREDO> --from-literal=password=<SEGREDO>
+ ```
+ O parâmetro `--from-literal` é usado para definir os dados (segredo, por exemplo) Secret.
+ Parâmetro `--from-file` que define o Secret a partir de um arquivo.
+ Parâmetro `--from-env-file` que defini o Secret a partir de uma variável de ambiente.
+ O Comando `create` codifica os dados em Base64 automaticamente.
+
+ - Adicionar o Secret em um Pod, via variável de ambiente, exemplo de manifest em secrets-pod.yaml.
+ - Após adicionar é possível acessar o Pod e verificar que foi adicionado na variável de ambiente os dados USERNAME e PASSWORD:
+```bash
+bebianc@BerUbuntu22:~/Descomplicando_kubernetes$ kubectl exec -it myapp -- env
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOSTNAME=myapp
+NGINX_VERSION=1.27.0
+NJS_VERSION=0.8.4
+NJS_RELEASE=2~bookworm
+PKG_RELEASE=2~bookworm
+PASSWORD=senhasecretopaque
+USERNAME=opaque
+```

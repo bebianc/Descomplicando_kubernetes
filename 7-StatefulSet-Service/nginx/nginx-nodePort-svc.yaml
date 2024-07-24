@@ -8,8 +8,8 @@ spec:
   selector: # Importante para definir qual Pod o Service vai ser atrelado
     app: nginx # todos que tiverem a label nginx
   ports:
-  - port: 80 # Porta do Service
+  - port: 80  # Porta do Service, que será mapeada para a porta 8080 do Pod
     name: http
     targetPort: 80 # Porta que o Pod está escutando para receber as requisições do Service
-    nodePort: 32000
+    nodePort: 32000 # Porta do Node, que será mapeada para a porta 80 do Service
   type: NodePort
