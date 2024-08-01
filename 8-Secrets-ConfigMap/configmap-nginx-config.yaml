@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data: 
+  nginx.conf: | #No campo `data` é usado para definir o conteúdo do ConfigMap. Usamos o carater | para definir o valor do campo data como um bloco de texto.
+    events {} #configurção de eventos
+
+    http {
+      server {
+        listen 80;
+        listen 443;
+
+        ssl_certificate /etc/nginx/tls/certicado.crt;
+        ssl_certificate_key /etc/nginx/tls/chave-privada.key;
+
+        location / { #configuração de rota /
+          return 200 'Pod Nginx com secret tipo TLS"\n'; #retorna o código 200 e a mensagem 
+          add_header Content-Type text/plain; # adiciona o header Content-Type com valot text/plain
+        }
+      }
+    }
