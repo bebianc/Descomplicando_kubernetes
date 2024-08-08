@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-https
+  labels:
+    name: nginx-https
+spec:
+  containers:
+  - name: nginx-https
+    image: nginx
+    ports:
+    - containerPort: 80
+    - containerPort: 443
+    volumeMounts:
+    - name: nginx-config-volume # volume para montar o arquivo de config do Nginx
+      mountPath: /etc/nginx/nginx.conf #caminho onde o arquivo vai ser montado
+      subPath: nginx.conf # nome arquivo de configuração Nginx  
+    - name: nginx-tls # volume para montar o cerficado TLS e chave
+      mountPath: /etc/nginx/tls # caminho do volume 
+  volumes: #lista de volumes que vamos usar no Pod
+  - name: nginx-config-volume
+    configMap: # tipo do volume que vamos usar
+      name: nginx-config # nome do arquivo q vamos usar
+  - name: nginx-tls 
+    secret: #tipo do volume que vamos usar
+      secretName: nginx-secret
+      items: # lista de arquivos que vamos montar, pois dentro do Secret tem 2 arquivos
+        - key: tls.crt # nome do arquivo que vamos montar, nome usado no campo data do Secret
+          path: nginx.crt # nome do certificado criado mesmo nome do nginx.conf]
+        - key: tls.key # nome do arquivo que vamos montar, nome usado no campo data do Secret
+          path: nginx.key
+
+ 

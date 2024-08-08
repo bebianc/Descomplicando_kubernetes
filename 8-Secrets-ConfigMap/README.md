@@ -202,3 +202,20 @@ kubectl port-foward service/nginx-secret-tls 4443:443 #A porta que será acessí
 curl -k https://localhost:4443 # -k "Allow insecure server connections"
 ```
 
+Desafio:
+Criar um Pod Nginx que contenha um `secret` TLS e um `configmap`, no secret deve ter o certificado TLS auto-assinado e chave gerado com OpenSSL, no configmap deve conter arquivo de configuração do Nginx passando os arquivos do certificado e chave.
+O Nginx deve responder na porta 443 internamente e externamente na porta 32400.
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginx.key -out nginx.crt
+kubectl create secret tls nginx-secret --cert=nginx.crt --key=nginx.key
+kubectl get secrets
+vi nginx.conf
+kubectl create configmap nginx-config --from-file=nginx.conf
+kubectl get configmap nginx-config
+kubectl apply -f nginx-https-pod.yaml
+kubectl expose pod nginx-https --type=NodePort --port=443 --target-port=443 --name=nginx-service
+kubectl get svc #(verificar se esta com nome nginx-service)
+kubectl edit svc # editar no nodePort para a 32400.
+curl -k https://localhost
+```
