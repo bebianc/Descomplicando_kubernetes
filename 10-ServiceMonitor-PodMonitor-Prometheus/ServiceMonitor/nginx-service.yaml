@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+  labels:
+    app: nginx-server # label para identificar o svc
+spec:
+  selector: # selector para identificar os pods/deployments que esse svc irá expor
+    app: nginx-server # label que identifica o pod/deployment que será exposto
+  ports:
+  - port: 9113 # porta do service
+    name: metrics # nome da porta
+  

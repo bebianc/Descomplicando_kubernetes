@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nginx-servicemonitor
+  labels:
+    app: nginx-server
+spec:
+  selector:
+    matchLabels:
+      app: nginx-server # tem que dar match com o label do service
+  endpoints: # basicamente irá indicar ao prometheus para a cada 10s fazer uma requisição para o /metrics na porta 9113, do serviço que der match com o label especificado
+    - interval: 10s
+      path: /metrics
+      targetPort: 9113

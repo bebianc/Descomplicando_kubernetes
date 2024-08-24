@@ -8,7 +8,7 @@
 
 Fornece uma stack de monitoramento completa do cluster baseado no Prometheus e Prometheus Operator. Inclui exportador de métricas como node_exporter para coletar métricas dos nós, e outros endpoints de métricas. É recomendado usá-lo ao invés de somente Prometheus Operator para monitoramento do cluster Kubernetes. [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus).
 
-# helm chart
+## helm chart
 
 O [prometheus-community/kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) helm chart 
 fornece feature similares ao kube-prometheus. É recomendado usá-lo ao invés do Prometheus Operator.
