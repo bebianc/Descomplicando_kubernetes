@@ -90,11 +90,11 @@ thanosrulers.monitoring.coreos.com          2024-08-20T09:53:16Z
 Para utilizar um ServiceMonitor é necessário criar uma aplicação como o Nginx e utilizar o exporter do Nginx para monitorarmos o serviço.
 Depois vamos injetar carga nessa aplicação para ter dados a serem monitorados.
 
-Será necessário criar um ConfigMap onde terá as configurações do Nginx. Nesse caso, vamo definir a rota `/nginx_status` para export as métricas do Nginx e expor a rota /metrics para export as métricas Nginx Exporter. Exemplo do `ConfigMap` em: nginx-configmap.yaml.
+Será necessário criar um ConfigMap onde terá as configurações do Nginx. Nesse caso, vamo definir a rota `/nginx_status` para export as métricas do Nginx e expor a rota /metrics para export as métricas Nginx Exporter. Exemplo do `ConfigMap` em: ServiceMonitor/nginx-configmap.yaml.
 
-Criando o `Deployment` da aplicação, exemplo em: nginx-deployment.yaml.
+Criando o `Deployment` da aplicação, exemplo em: ServiceMonitor/nginx-deployment.yaml.
 
-Criando um `Service` para expor nosso deployment em: nginx-service.yaml.
+Criando um `Service` para expor nosso deployment em: ServiceMonitor/nginx-service.yaml.
 
 Depois de tudo criado, verificar se o Nginx está rodando:
 ```bash
@@ -110,7 +110,7 @@ curl http://<EXTERNAL-IP-DO-SERVICE>:9113/metrics
 ```
 Finalizada a configuração e teste para criar um Service no Kubernetes e expor as `métricas do Nginx` e `Nginx Exporter`.
 
-Criando um `ServiceMonitor` para que o Prometheus capture as métricas do Nginx Exporter em: nginx-servicemonitor.yaml.
+Criando um `ServiceMonitor` para que o Prometheus capture as métricas do Nginx Exporter em: ServiceMonitor/nginx-servicemonitor.yaml.
 
 Para verificar o ServiceMonitor criado:
 ```bash
@@ -128,11 +128,35 @@ Acessar a página do Prometheus: http://localhost:9090/
 
 ## Criando um PodMonitor
 
-Criando um `Pod` nginx-pod.yaml com os containers do Nginx e Nginx Exporter.
+Temos situações que não temos um Service na frente dos Pods, quando temos CronJobs, Jobs, DaemonSets, etc. Em algumas situções o PodMonitor pode ser usado para monitorar Pods que não respondem por requisições HTTP, por exemplo, pods que expõem métricas do RabbitMQ, do Redis, Kafka, etc.
 
-Criando um `PodMonitor` nginx-podmonitor.yaml que irá monitorar o Pod.
+Criando um `Pod` PodMonitor/nginx-pod.yaml com os containers do Nginx e Nginx Exporter.
+
+Criando um `PodMonitor` PodMonitor/nginx-podmonitor.yaml que irá monitorar o Pod.
 
 Verificar o PodMonitor criado:
 ```bash
 kubectl get podmonitors.monitoring.coreos.com
 ```
+
+## Criando alertas no Prometheus
+
+### PrometheusRule
+
+Acesso ao AlertManager:
+```bash
+kubectl port-forward svc/alertmanager-main 9093:9093 -n monitoring
+```
+Boa parte da configurção do `Prometheus` está dentro de `configmaps`, que são recursos do Kubernetes que armazenam dados em formato de chave e valor e são muito usados para armazenar configurações de aplicações.
+
+O ConfigMap `prometheus-k8s-rulefiles-0` é o que contém os alertas do Prometheus. Para visualizar:
+```bash
+kubectl get configmap prometheus-k8s-rulefiles-0 -n monitoring -o yaml
+```
+
+O `PrometheusRule` é um recurso do Kubernetes que permite a definição de alertas no Prometheus. Um exemplo de como criar está no manifesto: PrometheusRule/nginx-prometheusrule.yaml. Com o alerta configurado no Prometheus, quando for disparado, ele será enviado para o `AlertManager` e o AlertManager pode enviar uma notificação, por exemplo, via e-mail.
+
+```bash
+kubectl get prometheusrules.monitoring.coreos.com -n monitoring
+```
+

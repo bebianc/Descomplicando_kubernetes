@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: nginx-prometheus-rule
+  namespace: monitoring
+  labels:
+    prometheus: k8s # label que indica que o PrometheusRule será utilizado pelo Prometheus do Kubernetes
+    role: alert-rules # Label que indica que o PrometheusRule contém regras de alerta
+    app.kubernetes.io/name: kube-prometheus # label que indica que faz parte do kube-prometheus
+    app.kubernetes.io/part-of: kube-prometheus # label que indica que faz parte do kube-prometheus
+spec:
+  groups: # lista de grupo de regras
+    - name: nginx-prometheus-rule
+      rules: # lista de regras
+        - alert: NginxDown # nome do alerta
+          expr: nginx_up == 0 # expressão que será utilizada para disparar o alerta, se for  = 0
+          for: 1m # tempo que a expressão deve ser verdadeira para que o alerta seja disparado
+          labels:
+            severity: critical
+          annotations:
+            summary: "Nginx está indisponível" # titulo do alerta
+            description: "O serviço Nginx está a mais de 1 minuto indisponível. Nome do Pod: {{$labels.pod}}"  
+        - alert: NginxHighRequestRate
+          expr: rate(nginx_http_requests_total[5m]) > 10  # metrica que retorna no /metrics no nginx exporter
+          for: 1m 
+          labels:
+            severity: warning
+          annotations:
+            summary: "Nginx recebendo um número alto de requests"
+            description: "Alta quantidade de requisições no Nginx"
