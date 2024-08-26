@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / # pega o contexto /giropops-senhas e direciona para o / do container
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/" # esse é o path correto que a aplicação giropops-senhas responde
+        backend:
+          service:
+            name: giropops-senhas
+            port: 
+              number: 5000

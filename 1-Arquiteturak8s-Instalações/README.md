@@ -44,3 +44,49 @@ Alguns tópicos que são interessante conhecer antes de se aprofundar no univers
  *Componentes*:
     - Kubelet (porta TCP 10250): agent do kubernetes em cada node, garantindo que os containers estejam funcionando corretamente. Monitora o estado atual comparando com o estado desejado. Comunica com o ApiServer do Control Plane passando informações.
     - Kube Proxy: Proxy de rede que executa em cada node, permite a comunicação de rede entre pods e services dentro ou fora do cluster. Observa o control plane para identificar mudanças, atualizando as regras de encaminhamento de tráfego.
+
+
+ **Instalar kubectl**:
+ - https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+
+```bash
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  chmod +x kubectl
+  mv kubectl /usr/local/bin 
+```
+   
+**Instalar o kind**:
+ - https://kind.sigs.k8s.io/docs/user/quick-start/#installation
+
+```bash
+# For AMD64 / x86_64
+$ [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+# For ARM64
+$ [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-arm64
+$ chmod +x ./kind
+$ sudo mv ./kind /usr/local/bin/kind
+```
+
+- Se Docker instalado com rootless, para criar um cluster com kind seguir os passos a seguir:
+ https://kind.sigs.k8s.io/docs/user/rootless/
+
+```bash 
+export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
+```
+
+**Comandos kind**:
+ - criar um cluster com mais de 1 node:
+
+```bash 
+nano kubernetes_pick/day1/kind/kind-cluster.yaml
+kind create cluster --config kind-cluster.yaml --name clusterk8s
+```
+
+- Ĩnformações pós instalação:
+  - Control plane em execução em: https://127.0.0.1:39503
+  - CoreDNS em execução em: https://127.0.0.1:39503/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+  - Para debugar o cluster em caso de problema:
+
+```bash  
+kubectl cluster-info dump
+```
