@@ -55,6 +55,17 @@ https://kubernetes.github.io/ingress-nginx/deploy/
 
 ## Criando uma regra de Ingress
 
+Antes de criar as regras, é necessário fazer o deploy de uma aplicação para aplicar às regras:
+
+Fazer o deploy das aplicações no cluster Kind para fazer os testes:
+
+```bash
+kubectl apply -f giropops-deployment.yaml
+kubectl apply -f giropops-service.yaml
+kubectl apply -f redis-deployment.yaml
+kubectl apply -f redis-service.yaml
+```
+
 Criar um recurso de Ingress para o serviço giropops-senhas, exemplo no yaml: ingress.yaml
 
 ```bash
@@ -73,12 +84,13 @@ curl localhost/giropops-senhas
 kube
 ```
 **Trobleshooting**
+
 Fazendo um teste, acessando no navegador com o endereço `localhost/giropops-senhas` definido no Ingress `ingress.yaml`, vimos que a aplicação quebra para carregar o layout e outras funções. Isso acontece porque o Ingress está redirecionando as requisições do / para o contexto `/giropops-senhas` e as funções que quebram não estão em outros paths. Você pode verificar quais funções estão quebrando e o erro fazendo um `inspect` na página.
 Por isso a aplicação precisa estar corretamente implementada, para que todas as funções sejam carregadas corretamente.
 
 No caso do Ingress, também conseguimos contornar essa situação, criando um novo YAML `ingress-correto.yaml`, que vai direcionas as chamadas do "/" para o path "/", assim irá encontrar o path de todas as funções. Chamando no navegador dessa forma: `localhost`, verá que a página irá responder corretamente.
 
-## Criando múltiplos Ingress no mesmo Ingress Controller
+## Criando múltiplas regras de ingress para o mesmo Ingress Controller
 
 Para acesso a mais de uma aplicação que tem como path "/", é necessário adicionar diferentes `host` em cada ingress de cada aplicação (cada aplicação vai ter o seu ingress).
 Nesse exemplo criamos um Pod e um Service Nginx, na porta 80:
@@ -102,4 +114,58 @@ No /etc/hosts adicionamos a seguinte entrada. Detalhe é que como não temos um 
 127.0.0.1 ingress.nginx.local
 127.0.0.1 giropops-senhas.local
 ```
+## Instalando um cluster EKS para teste com Ingress
 
+No Kind não passamos a classe do Ingress que estamos usando, pois o default do Kind é o Ingress Nginx.
+Porém em Cloud Providers é necessário definir a classe que estamos usando. Então cada regra de Ingress que será criada, deverá especificar qual é a classe, pois poderá ter mais de um Ingress Controller por cluster.
+
+```bash
+eksctl create cluster --name=eks-cluster --version=1.30 --region=us-east-1 --nodegroup-name=eks-cluster-nodegroup --node-type=t2.medium --nodes=2 --nodes-min=1 --nodes-max=3 --managed
+```
+
+**Contextos no Kubernetes**
+
+Diferentes acesso à clusters configurado na sua máquina, são chamados de `Contextos`. Com o comando `config` podemos ver qual é o contexto que está configurado no momento.
+
+```bash
+# Verificar em qual contexto estou trabalhando no momento
+kubectl config current-context
+# Verificar contextos disponíveis
+kubectl config get-contexts
+# Mudar para outro contexto
+kubectl config use-context <nome-do-contexto>
+```
+
+### Instalar Ingress Nginx Controller na AWS
+
+Comando da AWS da documentação do Ingress Nginx:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.2/deploy/static/provider/aws/deploy.yaml
+```
+Ref.: https://kubernetes.github.io/ingress-nginx/deploy/
+
+Se acessar no navegador com HTTP, pois essa instalação não está com certificado SSL, verá a página do Nginx com 404 not found. Isso quer dizer que o Ingress Nginx foi instalado com sucesso.
+
+Fazer o deploy das aplicações no cluster da AWS para fazer os testes:
+
+```bash
+kubectl apply -f giropops-deployment.yaml
+kubectl apply -f giropops-service.yaml
+kubectl apply -f redis-deployment.yaml
+kubectl apply -f redis-service.yaml
+```
+
+**Ingress Class**
+Na definição das regras de Ingress, é sempre necessário informar o Ingress Class do Ingress que determinada aplicação irá utilizar.
+```bash
+IngressClassName: nginx # informar a classe do Ingress
+kubectl apply -f ingress-giropops-aws.yaml
+```
+#### Configurando um domínio válido para o Ingress no EKS
+
+```bash
+# deletar o ingress atual sem o dominio valido
+kubectl delete -f ingress-giropops-aws.yaml
+# Aplicar o ingress com dominio válido
+kubectl apply -f ingress-giropops-aws-dominio.yaml
+```
