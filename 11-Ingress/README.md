@@ -16,6 +16,13 @@ Funciona como uma camada de roteamento HTTP/HTTPs.
 - `Balanceamento de carga`: Distribuição automática de tráfego entre múltiplos pods de um serviço.
 - `Terminação SSL/TLS`: Permite a configuração de certificado SSL/TLS para a terminação de criptografia no ponto de entrada do cluster.
 - `Anexos de recursos`: Possibilidade de anexar recursos adicionais como ConfigMaps ou Secrets, que podem ser utilizados para configurar comportamentos adicionais como autenticação básica, lista de controle de acesso, etc.
+ 
+- Componentes do Controller no k8s, em ordem de comunicação:
+ - Ingress
+ - Service
+ - Endpoint/Endpointslice
+ - Secret TSL (opcional caso queira usar certificado)
+Esses componentes formam o PROXY que irá receber as requisições externas (host:porta) e direcionar para os endpoints (IPs dos Pods), de acordo com as regras criadas. 
 
 ## Configurando o Kind para suportar o Ingress
 
@@ -161,6 +168,9 @@ Na definição das regras de Ingress, é sempre necessário informar o Ingress C
 IngressClassName: nginx # informar a classe do Ingress
 kubectl apply -f ingress-giropops-aws.yaml
 ```
+Na implementação nova não se usa mais somente o nome (ex. "nginx") é necessário passar o nome exato do controller, nesse caso "k8s.io/ingress-nginx".
+
+
 #### Configurando um domínio válido para o Ingress no EKS
 
 ```bash
@@ -169,3 +179,5 @@ kubectl delete -f ingress-giropops-aws.yaml
 # Aplicar o ingress com dominio válido
 kubectl apply -f ingress-giropops-aws-dominio.yaml
 ```
+
+
