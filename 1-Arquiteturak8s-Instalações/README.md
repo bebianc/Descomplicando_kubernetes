@@ -89,4 +89,6 @@ kind create cluster --config kind-cluster.yaml --name clusterk8s
 
 ```bash  
 kubectl cluster-info dump
+#Deletar o cluster
+kind delete cluster --name clusterk8s
 ```

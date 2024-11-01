@@ -27,3 +27,12 @@ O recurso ClusterIssuer tem escopo de cluster. Isso significa que ao fazer refer
 --cluster-resource-namespace=minha-namespace
 ```
 Referência: https://cert-manager.io/
+
+**Utilizando Let's Encrypt como CA**
+
+Importante saber que se o Let's Encrypt como Issuer no cert-manager, existem dois modos, o `letsencrypt-staging` recomendado para testes, pois não tem limite de requisições para a CA para validação do certificado, e o modo `letsencrypt-prod` recomendado para uso em produção, pois há um limite na quantidade de validações do certificado.
+
+O Issuer do tipo ACME (Atomated Certificate Management Environment) é usado na configuração para emissão com Let's Encrypt. Quando criado um novo emissor ACME, o cert-manager irá gerar uma chave privada que é usada para identificá-lo no servidor ACME.
+Para garantir que os clientes não possam solicitar certificados para domínios que não sejam de sua propriedade, há dois testes ou desafios:
+ - HTTP01 que é feito através de um endpoint de URL HTTP.
+ - DNS01 que pe feito a partir de um registro DNS TXT.
