@@ -14,13 +14,14 @@ Com o `Certificate resource` do cert-manager, a chave privada e o certificado s�
 
 **Issuer**
 
-A primeira coisa que você precisará configurar depois de instalar o cert-manager é um Issuer ou ClusterIssuer. Estes são recursos do Kubernetes que representam autoridades de certificação (CAs) capazes de assinar certificados em resposta a solicitações de assinatura de certificados.
+A primeira coisa que você precisará configurar depois de instalar o cert-manager é um Issuer ou ClusterIssuer. Estes são recursos do Kubernetes que representam autoridades de certificação (CAs) capazes de assinar certificados em resposta a solicitações de assinatura de certificados, ou seja, é o componente que irá fazer a requisição para as CAs para assinatura do certificado.
 
 Namespaces:
 Um Issuer é um recurso com namespace e não é possível emitir certificados de um Issuer em um namespace diferente. Isso significa que você precisará criar um Issuer em cada namespace no qual deseja obter Certificados.
 Se você quiser criar um único Issuer que possa ser consumido em vários namespaces, considere criar um recurso ClusterIssuer. Isso é quase idêntico ao recurso Issuer, porém não tem namespace, portanto pode ser usado para emitir certificados em todos os namespaces.
 
 **ClusterIssuer**
+
 O recurso ClusterIssuer tem escopo de cluster. Isso significa que ao fazer referência a um secret por meio do campo secretName, os segredos serão procurados no Namespace de Recursos de Cluster. Por padrão, este namespace é cert-manager, mas pode ser alterado por meio de uma flag no componente cert-manager-controller:
 
 ```yaml
@@ -28,11 +29,23 @@ O recurso ClusterIssuer tem escopo de cluster. Isso significa que ao fazer refer
 ```
 Referência: https://cert-manager.io/
 
-**Utilizando Let's Encrypt como CA**
+## Utilizando Let's Encrypt como CA
 
 Importante saber que se o Let's Encrypt como Issuer no cert-manager, existem dois modos, o `letsencrypt-staging` recomendado para testes, pois não tem limite de requisições para a CA para validação do certificado, e o modo `letsencrypt-prod` recomendado para uso em produção, pois há um limite na quantidade de validações do certificado.
 
-O Issuer do tipo ACME (Atomated Certificate Management Environment) é usado na configuração para emissão com Let's Encrypt. Quando criado um novo emissor ACME, o cert-manager irá gerar uma chave privada que é usada para identificá-lo no servidor ACME.
-Para garantir que os clientes não possam solicitar certificados para domínios que não sejam de sua propriedade, há dois testes ou desafios:
- - HTTP01 que é feito através de um endpoint de URL HTTP.
- - DNS01 que pe feito a partir de um registro DNS TXT.
+
+O Issuer do tipo `ACME` (Atomated Certificate Management Environment) é usado na configuração para emissão com Let's Encrypt. Quando criado um novo emissor ACME, o cert-manager irá gerar uma chave privada que é usada para identificá-lo no servidor ACME.
+
+**Teste para validar se o certificado é real**
+
+Para garantir que o certificado é válido quando realizado uma requisição a um endereço HTTPs, há dois testes ou desafios:
+    
+    - HTTP01 que é feito através de um endpoint de URL HTTP, aonde possui um arquivo específico no endpoint que o cliente vai acessar para validar a autenticidade. Utilizando o cert-manager o arquivo é gerado de forma automática. Esse formato é o que vamos utilizar nessa documentação.
+
+    - DNS01 que é feito a partir de um registro DNS TXT, aonde é necessário adicionar uma entrada de um arquivo TXT no DNS.
+
+- Se utilizando o Let's Encrypt, os certificados gerados são armazenados automaticamente no Secrets do Kubernetes, pelo cert-manager.
+- Se já temos outros certificados, é possível substituí-los no Secrets ou armazenar por exemplo, no Vault.
+
+## Instalação e Configuração do cert-manager
+
