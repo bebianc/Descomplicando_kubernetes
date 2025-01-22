@@ -120,3 +120,5 @@ kubectl describe clusterissuers letsencrypt-staging
 # secret criado automaticamente pelo Issuer
 kubectl -n cert-manager get secret 
 ```
+
+## Configurnado o Ingress para usar o Cert-Manager e ter o HTTPS
