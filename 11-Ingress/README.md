@@ -34,8 +34,8 @@ Para criar o cluster:
 sudo vi /etc/sysctl.conf
 # Reiniciar a máquina
 init 0
-sudo kind create cluster --config kind-cluster-ingress.yaml
-sudo kubectl get nodes
+kind create cluster --config kind-cluster-ingress.yaml --name clusterk8s
+kubectl get nodes
 ```
 
 ## Instalando o Ingress Nginx Controller
@@ -67,10 +67,10 @@ Antes de criar as regras, é necessário fazer o deploy de uma aplicação para 
 Fazer o deploy das aplicações no cluster Kind para fazer os testes:
 
 ```bash
-kubectl apply -f giropops-deployment.yaml
-kubectl apply -f giropops-service.yaml
-kubectl apply -f redis-deployment.yaml
 kubectl apply -f redis-service.yaml
+kubectl apply -f redis-deployment.yaml
+kubectl apply -f giropops-service.yaml
+kubectl apply -f giropops-deployment.yaml
 ```
 
 Criar um recurso de Ingress para o serviço giropops-senhas, exemplo no yaml: ingress.yaml

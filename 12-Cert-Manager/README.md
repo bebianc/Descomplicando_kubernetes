@@ -49,3 +49,74 @@ Para garantir que o certificado é válido quando realizado uma requisição a u
 
 ## Instalação e Configuração do cert-manager
 
+Instalação simples, conforme documentação:
+
+*Lembre-se de olhar os pré-requisitos.
+
+```yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.3/cert-manager.yaml
+kubectl -n cert-manager get all 
+```
+
+### Criar um Issuer ACME básico 
+
+Essa configuração irá criar um `ClusterIssuer` que será aplicação para todas as namespaces do cluster, usando o modo `staging`, sem limites de requisições para a CA. Como solver para testar se o certificado é válido utilizamos o modo HTTP01.
+
+Para aplicar a configuração apenas para uma namespace específica deve mudar o **kind** para **Issuer**.
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: user@example.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: letsencrypt-staging
+    # Add a single challenge solver, HTTP01 using nginx
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: nginx
+```
+
+Essa configuração irá criar o Issuer no modo prod, com limitação de requisições para a CA.
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: user@example.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: letsencrypt-prod
+    # Add a single challenge solver, HTTP01 using nginx
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: nginx
+```
+
+Aplicar e validar configuração do Issuer:
+
+```bash
+kubectl apply -f ingress-clusterIssuer.yaml
+kubectl get clusterissuers
+kubectl get issuers
+kubectl describe clusterissuers letsencrypt-staging
+# secret criado automaticamente pelo Issuer
+kubectl -n cert-manager get secret 
+```
