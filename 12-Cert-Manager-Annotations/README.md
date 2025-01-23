@@ -121,4 +121,83 @@ kubectl describe clusterissuers letsencrypt-staging
 kubectl -n cert-manager get secret 
 ```
 
-## Configurnado o Ingress para usar o Cert-Manager e ter o HTTPS
+## Configurando o Ingress para usar o Cert-Manager e ter o HTTPS
+
+Editando o ingress-dnslocal-giropops.yaml que já existe, adicionando um Annotation definindo que será utilizado o Cert-Manager para gerenciamento do certificado e o host que irá receber as configurações de TLS.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / 
+    cert-manager.io/cluster-issuer: "letsencrypt-staging" #definir no ingress para usar o cert-manager com cluster-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: # definindo qual é o host que irá receber as configurações de TLS
+    - giropops-senhas.local
+    secretName: giropops-senhas-tls # secret que será criado automatico com as informacoes de TLS
+  rules:
+  - host: giropops-senhas.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: giropops-senhas
+            port: 
+              number: 5000
+
+```
+```bash
+kubectl delete ingress giropops-senhas
+kubectl apply -f ingress ingress-dnslocal-giropops.yaml
+kubectl get certificate 
+kubectl get orders
+kubectl get certificaterequests 
+```
+Nos comandos o `certificate`, `orders` e `certificaterequests` o campo READY precisa está `True`, caso contrário o certificado não será aplicado no DNS, é possível validar o motivo nos eventos do describe.
+Nesse caso, como o domínio que definimos não está publicado, o Issuer não consegue validar autenticidade e falha na requisição ao certificado. Por isso, o recomendado é criar um cluster na AWS com ingress público.
+
+# Annotations e Labels
+
+É uma forma de passar informações para o objeto possa utilizar outro recurso específico. A diferença para o Label é que no Label você utliza para identificação e categorização dos Pods, linkando com os objetos internos do cluster como os services, endpoints, já o Annotations é usado para linkar com os CRDs (Custom Recources Definition). 
+Cada recurso como o Ingress, Cert-Manager, Vault... possui annotations específicos para ser adicionado no manifesto da aplicação.
+
+Alguns comandos com Label:
+
+```bash
+# filtrar todos os objetos que tenham uma label específica
+kubectl get all --selector=giropops
+# adicionar um label com chave valor em um pod especifico
+kubectl label pods nomeCompletoDoPod app2=nova
+# Sobreescrever uma chave específica do label do Pod
+kubectl label pods nomeCompletoDoPod app2=velha --overwrite
+# filtrar todos os pods que possuem a Label 'app'
+kubectl get pods -L app
+```
+Exemplo de um manifesto explicando as LABELs do Deployment e do Pod.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: giropops-senhas  ## LABEL do Deployment
+  name: giropops-senhas
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: giropops-senhas ## A mesma LABEL do Deployment precisa existir dando match na definição do POD.
+  template:
+    metadata:
+      labels:
+        app: giropops-senhas ## LABEL do POD, diferente da label do Deployment.
+        app2: velha  # repare que essa LABEL não existe no Deployment, então se eu filtrar por 'app2' apenas o POD irá retornar.
+    spec:
+      containers:
+      - image: bebianc/linuxtips-giropops-senhas_semvelnerabi:7.0
+```

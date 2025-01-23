@@ -114,6 +114,8 @@ Criamos um ingress adicionando um host com um DNS local fictício e adicionamos 
 kubectl apply -f ingress-nginx.yaml
 # também criamos um Ingress com um DNS para a aplicação giropops: ingress-dnslocal-giropops.yaml
 kubectl apply -f ingress-dnslocal-giropops.yaml
+kubectl get ingress
+kubectl -n ingress-nginx get svc
 ```
 No /etc/hosts adicionamos a seguinte entrada. Detalhe é que como não temos um certificado SSL no DNS e para evitar que o navegador redirecione para HTTPS, temos que criar o DNS como *.local:
 

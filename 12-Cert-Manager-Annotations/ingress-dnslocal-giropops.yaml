@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: / 
+    cert-manager.io/cluster-issuer: "letsencrypt-staging" #definir no ingress para usar o cert-manager com cluster-issuer
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: # definindo qual é o host que irá receber as configurações de TLS
+    - giropops-senhas.local
+    secretName: giropops-senhas-tls # secret que será criado automatico com as informacoes de TLS
+  rules:
+  - host: giropops-senhas.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: giropops-senhas
+            port: 
+              number: 5000
