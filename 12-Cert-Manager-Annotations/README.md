@@ -178,8 +178,10 @@ kubectl label pods nomeCompletoDoPod app2=nova
 kubectl label pods nomeCompletoDoPod app2=velha --overwrite
 # filtrar todos os pods que possuem a Label 'app'
 kubectl get pods -L app
+# Apagar o label app2
+kubectl label pods nomeCompletoDoPod app2-
 ```
-Exemplo de um manifesto explicando as LABELs do Deployment e do Pod.
+Exemplo de um manifesto explicando as **LABELs** do Deployment e do Pod.
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -200,4 +202,49 @@ spec:
     spec:
       containers:
       - image: bebianc/linuxtips-giropops-senhas_semvelnerabi:7.0
+```
+
+Alguns comandos com **Annotations**:
+```bash
+#Criar um anotation
+kubectl annotate pods redis-deployment-785855684c-vmn89 description="Pod do redis para ser usado com o giropops-senhas"
+kubectl describe pod redis-deployment-785855684c-vmn89 | grep "Annotation"
+#Apagar um annotation
+kubectl annotate pods redis-deployment-785855684c-vmn89 description-
+```
+
+Criar filtros mais específicos com Json:
+```bash
+# Filtrar no Pod do Redis o Metadata annotation
+kubectl get pods redis-deployment-785855684c-vmn89 -o jsonpath='{.metadata.annotations}'
+kubectl get pods redis-deployment-785855684c-vmn89 -o jsonpath='{.metadata.annotations.description}'
+```
+
+# Adicionando autenticação no Ingress
+
+Trecho do ingress-dnslocal.giropops.yaml que adicionamos os Annotations para que o usuário se autentique no Nginx antes de acessar a aplicação.
+
+```yaml
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/auth-type: "basic" # configura o nginx para autenticacao do tipo basic
+    nginx.ingress.kubernetes.io/auth-secret: "giropops-senhas-users" # secret para armazenar as credenciais
+    nginx.ingress.kubernetes.io/auth-realm: "Autenticação necessária" # mensagem de autenticação que irá aparecer em tela 
+[...]    
+```
+
+Para criptografar um usuário e senha pode ser usado um recurso do Apache que é o `htpasswd`.
+```bash
+# Instalar
+sudo apt install apache2-utils
+# Gerar um arquivo 'auth' com a senha criptografada
+htpasswd -c auth bebianc
+cat auth
+# Criar um secret do tipo genérico, com o arquivo 'auth' gerado
+kubectl create secret generic giropops-senhas-users --from-file=auth
+# Acompanhar o log do ingress para verificar o login
+kubectl logs -f -n ingress-nginx ingress-nginx-controller-*
 ```
