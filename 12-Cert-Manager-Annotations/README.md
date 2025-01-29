@@ -220,7 +220,9 @@ kubectl get pods redis-deployment-785855684c-vmn89 -o jsonpath='{.metadata.annot
 kubectl get pods redis-deployment-785855684c-vmn89 -o jsonpath='{.metadata.annotations.description}'
 ```
 
-# Adicionando autenticação no Ingress
+# Configurações adicionais no Ingress
+
+## Adicionando autenticação no Ingress
 
 Trecho do ingress-dnslocal.giropops.yaml que adicionamos os Annotations para que o usuário se autentique no Nginx antes de acessar a aplicação.
 
@@ -247,4 +249,110 @@ cat auth
 kubectl create secret generic giropops-senhas-users --from-file=auth
 # Acompanhar o log do ingress para verificar o login
 kubectl logs -f -n ingress-nginx ingress-nginx-controller-*
+```
+
+## Configurando Affinity Cookie no Ingress
+
+A configuração de affinity no Ingress do Pod, faz com que todas as requisições sejam direcionadas para o mesmo Pod, adicionando a configuração de `Cookie` no Annotations, que é basicamente um arquivo que fica na máquina do usuário com as informações necessárias para que o Ingress possa garantir que as requisições serão direcionadas sempre para o mesmo Pod.
+
+Configuração de Affinity no Ingres:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "giropops-cookie"
+[...]    
+```
+Para validar se foi adiciona cookie na requisição:
+
+```bash
+# Aplica o Ingress com cookie sem HTTPs para o DNS local
+kubectl apply -f ingressHTTP-dnslocal-giropops.yaml
+# Para pegar o DNS e ver se a configuração ficou correta
+kubectl get ingress giropops-senhas -o yaml 
+# -I mostra o cabeçalho da requisição com a informação do cookie
+curl -I http://giropops-senhas.local
+```
+
+## Configurando Upstream Hashing no Ingress
+
+É uma forma mais moderna de passar informações para o usuário, no cabeçalho da requisição e direcionar para onde a requisição deve ser encaminhada. Isso é feito através de um algoritmo que gera um hash. Não é necessário ter informações do lado do client (como acontece com cookie), apenas no servidor.
+
+Nesse caso utilizamos o parâmetro `request_uri`, mas há outras formas de configurar, vai depender do seu cenário.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
+[...]    
+```    
+Utilizar `Hashing`, talvez seja uma melhor opção que o `cookie`, pois se o Pod morre poderá ter problema, já com Hashing não, a requisição é direcionada automaticamente para outro Pod.
+
+## Canary Deployment com Ingress
+
+É uma maneira de direcionar uma porcentagem das requisições para uma outra imagem ou versão de uma aplicação. Por exemplo, se eu quero "testar" uma nova versão da aplicação posso direcionar que apenas 10% das requisições sejam direcionadas a ela, e as demais continuem na versão atual.
+Isso pode ser feito através de configurações no Ingress.
+
+A configuração deve ser adicionada apenas na nova versão, na versão atual, original, não é necessário adicionar annotations.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas-canary # mudamos o nome do ingress pois irá apontar para o NGINX
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10" # define o peso (porcentagem de requisições que o Pod irá receber - 10%)
+
+[...]    
+
+        backend:
+          service:
+            name: nginx-canary # alteramos para direcionar as requisições para o service NGINX
+            port: 
+              number: 80 # na porta 80 do NGINX
+```  
+Apontamos para o serviço NGINX que vamos subir para rebecer os 10% de requisição:
+```bash
+kubectl run nginx-canary --image nginx --port 80
+kubectl expose pod nginx-canary
+kubectl get pods
+kubectl get svc
+kubectl apply -f ingressHTTPCanary-dnslocal-giropops.yaml
+kubectl get ingress
+```
+**Interessante**: Uma combinação que pode ser feita é adicionar a regra de Affinity, para que quando um usuário caia no Pod na nova versão, continue utilizando a mesma versão.
+
+## Limitando requisições a aplicação com Ingress
+
+Forma de limitar o acesso à aplicação, definindo uma quantidade de requisições que ela irá aceitar, com qualidade. Essa definição pode ser feita utilizando o k6 para realizar requisições simultâneas e verificar o quanto a aplicação suporta.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/limit-rps: "2" # aplicação vai aceitar apenas 2 requisições por segundo
+[...] 
+```
+
+Aplicar a configuração:
+```bash
+kubectl apply -f ingressHTTP-dnslocal-giropops.yaml
+```
+Verá que um limite 2 requisições por segundo é muito pouco, isso irá gerar erro 503 "Service Temporarily Unavailable", quando realizado mais requisições o que o definido.
+Uma forma de testar isso é realizar várias refresh no browser ou um curl em loop:
+```bash
+while true; do curl -s -o /dev/null -w "%{http_code}\n" http://giropops-senhas.local; done
 ```

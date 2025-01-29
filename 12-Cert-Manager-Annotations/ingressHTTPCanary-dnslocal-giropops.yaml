@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giropops-senhas-canary
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "10" # define o peso (porcentagem de requisições que o Pod irá receber - 10%)
+    #nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
+    #nginx.ingress.kubernetes.io/affinity: "cookie"
+    #nginx.ingress.kubernetes.io/session-cookie-name: "giropops-cookie"
+    #nginx.ingress.kubernetes.io/auth-type: "basic" # configura o nginx para autenticacao do tipo basic
+    #nginx.ingress.kubernetes.io/auth-secret: "giropops-senhas-users" # secret para armazenar as credenciais
+    #nginx.ingress.kubernetes.io/auth-realm: "Autenticação necessária" # mensagem de autenticação que irá aparecer em tela 
+    #cert-manager.io/cluster-issuer: "letsencrypt-staging" #definir no ingress para usar o cert-manager com cluster-issuer
+spec:
+  ingressClassName: nginx
+  #tls:
+  #- hosts: # definindo qual é o host que irá receber as configurações de TLS
+  #  - giropops-senhas.local
+  #  secretName: giropops-senhas-tls # secret que será criado automatico com as informacoes de TLS
+  rules:
+  - host: giropops-senhas.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: nginx-canary # alteramos para direcionar as requisições para o service NGINX
+            port: 
+              number: 80 # na porta 80 do NGINX
