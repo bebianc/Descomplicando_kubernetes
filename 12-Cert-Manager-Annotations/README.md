@@ -332,7 +332,7 @@ kubectl get ingress
 ```
 **Interessante**: Uma combinação que pode ser feita é adicionar a regra de Affinity, para que quando um usuário caia no Pod na nova versão, continue utilizando a mesma versão.
 
-## Limitando requisições a aplicação com Ingress
+## Limitando requisições à aplicação com Ingress
 
 Forma de limitar o acesso à aplicação, definindo uma quantidade de requisições que ela irá aceitar, com qualidade. Essa definição pode ser feita utilizando o k6 para realizar requisições simultâneas e verificar o quanto a aplicação suporta.
 
@@ -352,7 +352,7 @@ Aplicar a configuração:
 kubectl apply -f ingressHTTP-dnslocal-giropops.yaml
 ```
 Verá que um limite 2 requisições por segundo é muito pouco, isso irá gerar erro 503 "Service Temporarily Unavailable", quando realizado mais requisições o que o definido.
-Uma forma de testar isso é realizar várias refresh no browser ou um curl em loop:
+Uma forma de testar isso é realizar vários refresh no browser ou um curl em loop:
 ```bash
 while true; do curl -s -o /dev/null -w "%{http_code}\n" http://giropops-senhas.local; done
 ```
