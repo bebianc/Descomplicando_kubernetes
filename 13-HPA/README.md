@@ -54,5 +54,25 @@ kubectl top pods
 kubectl top nodes
 ```
 
+## Criar um HPA
+
+```bash
+# Criar um deployment do Nginx
+kubectl create deployment nginx-hpa --image nginx --port 80 --dry-run=client -o yaml > nginx-hpa-deployment.yaml
+# Editar as configurações conforme o manifesto nginx-hpa-deployment.yaml, adicionando a limits de CPU e memória
+# Depois aplicar as configurações
+kubectl apply -f nginx-hpa-deployment.yaml
+kubectl expose deploy nginx-hpa
+```
+Criando um HPA para o deployment `nginx-hpa` para realizar scale up ou scale down, de acordo com a utilização de CPU em 50%.
+
+```bash
+kubectl apply -f hpa1.yaml
+kubectl get hpa
+kubectl describe hpa
+# Verá novos pods sendo criado de acordo com o minimo configurado no HPA
+kubectl get pods
+```
+
 
 **Para pegar outros tipos de métricas é possível especificar métricas do Prometheus.
