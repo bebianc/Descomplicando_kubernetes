@@ -10,7 +10,12 @@ O `Metric Server` é o componente que irá fornecer as métricas necessárias pa
 
 O Metric Server é um agregador de métricas de recursos de sistema, que coleta métricas como uso de CPU e memória dos `nós` e `pods` do cluster.
 
-O HPA utiliza essas métricas de uso de recursos para tomar decisões sobre o escalonamento. Por exemplo, se o uso de CPU de um pod exceder um determinado limite, o HPA pode decidir aumentar o número de réplicas desse pod. Da mesma forma, se o uso de CPU for muito baixa, o HPA pode decidir reduzir o número de réplicas. Para fazer isso de forma eficaz, o HPA precisa ter acesso a métricas precisas e atualizadas que são fornecidas pelo Metrics Server.
+O HPA utiliza essas métricas de uso de recursos para tomar decisões sobre o escalonamento. 
+Por exemplo, se o uso de CPU de um pod exceder um determinado limite, o HPA pode decidir aumentar o número de réplicas desse pod. 
+Da mesma forma, se o uso de CPU for muito baixa, o HPA pode decidir reduzir o número de réplicas. 
+Para fazer isso de forma eficaz, o HPA precisa ter acesso a métricas precisas e atualizadas que são fornecidas pelo Metrics Server.
+
+Para pegar outros tipos de métricas é possível especificar métricas do Prometheus, no metrics server.
 
 ### Instalando o Metrics Server
 
@@ -73,6 +78,125 @@ kubectl describe hpa
 # Verá novos pods sendo criado de acordo com o minimo configurado no HPA
 kubectl get pods
 ```
+## Instalando o Locust para Stress Test
+
+Aplicar o service.yaml, confimap e Deployment do Locust, com a imagem da linuxtips.
+Porém pode ser instalado de outras maneiras seguindo a documentação: https://locust.io/
+
+**Deployment**
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: locust
+  name: locust
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+  template:
+    metadata:
+      labels:
+        app: locust
+    spec:
+      containers:
+      - image: linuxtips/locust-giropops:1.0
+        name: locust
+        env:
+          - name:  LOCUST_LOCUSTFILE
+            value: "/usr/src/app/scripts/locustfile.py"
+        ports:
+        - containerPort: 8089
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: locust-scripts
+          mountPath: /usr/src/app/scripts
+      volumes:
+      - name: locust-scripts
+        configMap:
+          name: locust-scripts
+          optional: true
+```
+**Service**
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust
+spec:
+  selector:
+    app: locust
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8089
+  type: ClusterIP
+```
+
+No **ConfigMap** declaramos a configuração das requisições de como iremos realizar o teste, dependendo do cenário da sua aplicação. 
+Há várias maneiras e alguns exemplos também estão na documentação oficial.
+```yaml
+apiVersion: v1
+data:
+  locustfile.py: |-
+    from locust import HttpUser, task, between
+    from requests.auth import HTTPBasicAuth
+
+    class Giropops(HttpUser):
+        wait_time = between(1, 2)
+
+        def on_start(self):
+            self.auth = HTTPBasicAuth('username', 'senha') # usar se aplicação requer autenticacao
 
 
-**Para pegar outros tipos de métricas é possível especificar métricas do Prometheus.
+        @task(1)
+        def listar_senha(self):
+            self.client.get("/spsmb/azure/ia/doRetrieve?id=S3-dd8b9942-3f7f-1232-aa4b-7cd2ba675678", auth=self.auth) # contexto da requisição, metodo de autenticacao
+kind: ConfigMap
+metadata:
+  name: locust-scripts
+```
+
+## Criando HPA baseado em CPU e memória
+
+Basta adicionar no hpaCpuMemory.yaml esse trecho incluindo a utilização por recurso de memória, em 50%. Nesse caso quando atingir 50% de memória, irá escalar mais um pod.
+
+```yaml
+[...]
+ - type: Resource # ira se basear no tipo de resources      
+    resource:
+      name: memory
+      target:
+        type: Utilization 
+        averageUtilization: 50 
+```        
+
+## Utilizando configurações avançadas para o ScaleUP e ScaleDown usando HPA
+
+Nesse exemplo, adicionamos o parâmetro `behavior`, no hpaCpuMemory.yaml e definimos as regras de scaleUp e scaleDown.
+
+```yaml
+[...]
+behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 5 # depois de 5s atingindo o 'averageUtilization' irá escalar o Pod
+      policies:
+      - type: Percent # Policie que indica que 100% das vezes essa regra tem que ser respeitada
+        value: 100 
+        periodSeconds: 10 # a cada 10s valida essas regras da politica  
+    scaleDown:
+      stabilizationWindowSeconds: 300 # 5min é o tempo que o HPA irá esperar para fazer o scaleDown
+      policies:
+      - type: Percent # Policie que indica que 100% das vezes essa regra tem que ser respeitada
+        value: 100 
+        periodSeconds: 10 # a cada 10s valida essas regras da politica          
+``` 
+
+No parâmetro "stabilizationWindowSeconds" geralmente é configurado 0 segundos para escalar imediatamente, porém dependendo da situação o HPA pode ficar intermitente, subindo e descendo pods a todo momento e isso pode comprometer o bom funcionamento da aplicação.
+
+No teste de stress é possível acompanhar o comportamento do deployment fazendo o escalonamento, com o parâmetro `-w` para contar a quantidade de réplicas em execução.
+```bash
+kubectl get deployment giropops-senhas -w
+```
