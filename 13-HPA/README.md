@@ -200,3 +200,57 @@ No teste de stress é possível acompanhar o comportamento do deployment fazendo
 ```bash
 kubectl get deployment giropops-senhas -w
 ```
+
+## Usando a métrica ContainerResource com HPA
+
+Alterando o tipo de `Resource` para `ContainerResource` especificamos que a condição para escalar mais Pods, é o uso de CPU em 50%, somente do container
+com nome `giropops-senhas`. Útil para os casos em que temos mais de um container no Pod, por exemplo: Vault ou Istio-sidecar, que não demonstram uma variação
+no consumo de recursos e com isso, nos dá melhor precisão para escalar o quanto antes.
+
+```yaml
+[...]
+ - type: ContainerResource # ira se basear no tipo de resources      
+   containerresource:
+      name: memory
+      container: giropops-senhas
+      target:
+        type: Utilization 
+        averageUtilization: 50 
+[...]        
+```        
+
+Outros tipos de métricas podem ser utilizadas, por exemplo para `Ingress` como Istio, Apache e Nginx, métricas como `requests-per-second`, `http_requests`
+ou por exemplo ser mais preciso ao escalar pods do `Rabbit`, métricas externas como `queue_messages_ready` podem auxiliar.
+
+## Detalhamento do Algoritmo de escalonamento
+
+**Cálculo do número de réplicas**
+
+O núcleo do HPA, é o seu Algoritmo de escalonamento, que determina o número ideal de réplicas com base nas métricas fornecidas.
+A fórmula básica utilizada pelo HPA para calcular o número desejado de réplicas é:
+
+```bash
+desiredReplicas = [currentReplicas x (currentMetricValue / desiredMetricValue)]
+
+```
+
+**Exemplo com valores específicos**
+
+1. Exemplo de Escalar para Cima:
+    - Réplicas atuais: 2
+    - Valor atual da métrica (CPU): 80%
+    - Valor desejado da métrica (CPU): 50%
+    - Cálculo: [2 x (80%/50%)] = [3,2] = 4 Réplicas
+
+2. Exemplo de Escalar para Baixo:
+    - Réplicas atuais: 5
+    - Valor atual da métrica (CPU): 30%
+    - Valor desejado da métrica (CPU): 50%
+    - Cálculo: [5 x (30%/50%)] = [3] = 3 Réplicas
+
+**Considerações sobre métricas e Estado dos Pods**
+
+ - `Métricas de Recurso por Pod e Personalizadas`: O HPA pode ser configurado para usar métricas (como CPU e memória) ou métricas personalizadas definidas pelo
+ usuário, permitindo maior flexibilidade.
+ - `Tratamento de Pods sem Métricas ou Não Prontos`: Se um Pod não tiver métricas disponíveis ou não estiver pronto, ele pode ser excluído do cálculo de média,
+ evitando decições de escalonamento baseadas em dados incompletos.
