@@ -111,3 +111,17 @@ require-resources-limits:
 
 ```
 A mesma mensagem será exibida se definir apenas um dos recursos, memória ou CPU.
+
+### Adicionar Labem ao Namespace usando o Mutate no Kyverno
+
+O `Mutate` do Kyverno é projetado para realizar alguma alteração seja no Pod, deployment, namespace e etc. Nesse caso, vamos utilizar uma política para 
+adicionar uma label. 
+
+A política `add-label-namespace` é projetada para automatizar a adição de um label específico a todos os Namespaces em um cluster. 
+
+**Detalhes da política**: O label adicionado por esta política é `Gato: Bartolomeu`. A aplciação deste label a todos os namespaces facilita a identificação 
+e a categorização dos mesmos, permitindo uma gestão mais eficiente e uma padronização no uso de labels.
+
+**Utilização da política**: Garante que cada Namespace no cluster seja automaticamente etiquetado com `Gato: Bartolomeu`. Isso é útil para garantir conformidade 
+e a uniformidade na atribuição de labels, facilitando operações como filtragem e busca de Namespace, com base em critérios específicos.
+

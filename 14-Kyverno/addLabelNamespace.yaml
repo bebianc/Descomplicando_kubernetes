@@ -1,0 +1,16 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy # aplica política para todo o cluster
+metadata:
+  name: add-label-namespace
+spec:
+  rules:
+  - name: add-label-ns
+    match: 
+      resources:
+        kinds: 
+        - Namespace
+    mutate:
+      patchStrategicMerge: # estratégia de modificação no recurso
+        metadata:
+          labels:
+            Gato: "Bartolomeu" # toda namepace que for criada vai ser adicionada esse label
