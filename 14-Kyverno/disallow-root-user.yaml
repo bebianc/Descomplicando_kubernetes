@@ -1,0 +1,21 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root-user
+spec:
+  validationFailureAction: Enforce # valida antes a regra e força para que não seja criado o Pod com root no container
+  rules:
+  - name: check-runAsNonRoot
+    match:
+      resources:
+        kinds:
+        - Pod # a regra será aplicada nos Pods
+    validate:
+      message: "Root? Isso nao pode amigao!"
+      pattern:
+        spec:
+          containers:
+          - securityContext: # recurso de segurança do kubernetes
+              RunAsNonRoot: true # regra do securityContext que não permite a criação de container com usuaŕio root. Essa é a regra que vamos utilizar para 
+                                 # bloquear a criação de container com root.
+                                 

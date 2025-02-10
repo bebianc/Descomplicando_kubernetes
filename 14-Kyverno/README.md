@@ -125,3 +125,30 @@ e a categorização dos mesmos, permitindo uma gestão mais eficiente e uma padr
 **Utilização da política**: Garante que cada Namespace no cluster seja automaticamente etiquetado com `Gato: Bartolomeu`. Isso é útil para garantir conformidade 
 e a uniformidade na atribuição de labels, facilitando operações como filtragem e busca de Namespace, com base em critérios específicos.
 
+### Criando uma Policy do tipo Generate
+
+A política `generate-configmap-for-namespace` é uma estratégia prática para automatizar a criação de ConfigMaps em Namespaces, simplificando a configuração e gestão de múltiplos ambientes em um cluster.
+
+Exemplo da regra está no manifesto **generate-configmap-for-namespace.yaml**;
+
+```bash
+kubectl apply -f generate-configmap-for-namespace.yaml
+kubectl get clusterpolicies.kyverno.io
+kubectl describe clusterpolicies.kyverno.io generate-configmap-for-namespace
+kubectl create ns bichos
+# irá mostrar o CM criado automaticamente após a criação da namespace
+kubectl get cm -n bichos
+```
+
+### Criar policy para proibir root nos containers
+
+A política `disallow-root-user` é uma regra de segurança crítica no gerenciamento do Kubernetes. Ela proíbe a execução de containers com usuário root dentro dos Pods. Este controle ajuda a previnir possíveis vulnerabilidades de segurança e a reforçar as melhores práticas no ambiente de contêineres.
+
+Aplicando a política, os pods que tentarem executar containers como usuário root serão impedidos, com a exibição de uma mensagem de erro, indicando que a execução como root não é permitida. Isso assegura uma camada adicional de segurança no ambiente Kubernetes, evitando práticas que possam comprometer a integridade e a segurança do cluster.
+
+```bash
+kubectl apply -f disallow-root-user.yaml
+kubectl get clusterpolicies.kyverno.io
+# Tentar criar um Pod com container com usuário root, irá retornar a mensagem.
+kubectl apply -f podssemlimites.yaml
+```

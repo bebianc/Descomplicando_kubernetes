@@ -1,0 +1,21 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-configmap-for-namespace
+spec:
+  rules:
+  - name: generate-cm-adding-ns
+    match:
+      resources:
+        kinds:
+        - Namespace
+    generate: # regra que irá criar, gerar um configmap na namespace
+      apiVersion: v1
+      kind: ConfigMap
+      name: default-configmap # nome do configmap que será criado na ns
+      namespace: "{{request.object.metadata.name}}" # indicar qual a ns passando como atributo do objeto que está em "name" dentro de "metadata"
+      data:
+       data: # dados que estarão no configmap
+         key1: "Gato"
+         key2: "Bartolomeu"
+          
