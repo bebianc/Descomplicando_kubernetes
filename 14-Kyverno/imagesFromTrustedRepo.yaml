@@ -1,0 +1,21 @@
+apiVersion: kyverno.io/v1
+kind: Policy # politica será aplicada para uma namespace especifica
+metadata:
+  name: ensure-images-from-trusted-repo
+  namespace: bichos
+spec:
+  validationFailureAction: Enforce # bloqueia o pull da imagem
+  rules:
+  - name: trusted-registry
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate: 
+      message: "Somente imagens do repo da Chainguard"    
+      pattern:
+        spec:
+          containers:
+          - name: "*"
+            image: "cgr.dev/chainguard/*"
+            

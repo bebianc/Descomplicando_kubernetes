@@ -10,7 +10,12 @@ spec:
     match:
       resources:
         kinds: # aqui defino quais serão os objetos que farão parte da "rule", Pod, Deployment, Sts...
-        - Pod 
+        - Pod
+    exclude: # regra que exclui as namespaces definidas da politica de especificação de limits
+      resources:
+        namespaces: # por default o Kyverno ja exclui as namespaces kube-system, kube-public e a dele mesmo
+        - fazenda
+        - bichos    
     validate: # regra que define que será apenas validado, não será alterado (mutate) a tentantiva de criação de um pod sem limits.
       message: "Necessário definir o limite de recursos" # mensagem que será mostrada se cair na regra da validação.
       pattern: # define o padrão da regra

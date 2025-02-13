@@ -32,6 +32,7 @@ helm repo update
 ```bash
 #kyverno é no nome do repo / kyverno que é o nome do chart
 helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace
+helm list -n kyverno
 kubectl get pods -n kyverno
 kubectl get crd | grep kyverno
 ```
@@ -112,12 +113,12 @@ require-resources-limits:
 ```
 A mesma mensagem será exibida se definir apenas um dos recursos, memória ou CPU.
 
-### Adicionar Labem ao Namespace usando o Mutate no Kyverno
+### Adicionar Label ao Namespace usando o Mutate no Kyverno
 
 O `Mutate` do Kyverno é projetado para realizar alguma alteração seja no Pod, deployment, namespace e etc. Nesse caso, vamos utilizar uma política para 
 adicionar uma label. 
 
-A política `add-label-namespace` é projetada para automatizar a adição de um label específico a todos os Namespaces em um cluster. 
+A política `add-label-namespace` exemplo é projetada para automatizar a adição de um label específico a todos os Namespaces em um cluster. 
 
 **Detalhes da política**: O label adicionado por esta política é `Gato: Bartolomeu`. A aplciação deste label a todos os namespaces facilita a identificação 
 e a categorização dos mesmos, permitindo uma gestão mais eficiente e uma padronização no uso de labels.
@@ -127,7 +128,7 @@ e a uniformidade na atribuição de labels, facilitando operações como filtrag
 
 ### Criando uma Policy do tipo Generate
 
-A política `generate-configmap-for-namespace` é uma estratégia prática para automatizar a criação de ConfigMaps em Namespaces, simplificando a configuração e gestão de múltiplos ambientes em um cluster.
+A política `generate-configmap-for-namespace` exemplo é uma estratégia prática para automatizar a criação de ConfigMaps em Namespaces, simplificando a configuração e gestão de múltiplos ambientes em um cluster.
 
 Exemplo da regra está no manifesto **generate-configmap-for-namespace.yaml**;
 
@@ -142,13 +143,54 @@ kubectl get cm -n bichos
 
 ### Criar policy para proibir root nos containers
 
-A política `disallow-root-user` é uma regra de segurança crítica no gerenciamento do Kubernetes. Ela proíbe a execução de containers com usuário root dentro dos Pods. Este controle ajuda a previnir possíveis vulnerabilidades de segurança e a reforçar as melhores práticas no ambiente de contêineres.
+A política `disallow-root-user` exemplo é uma regra de segurança crítica no gerenciamento do Kubernetes. Ela proíbe a execução de containers com usuário root dentro dos Pods. Este controle ajuda a previnir possíveis vulnerabilidades de segurança e a reforçar as melhores práticas no ambiente de contêineres.
 
 Aplicando a política, os pods que tentarem executar containers como usuário root serão impedidos, com a exibição de uma mensagem de erro, indicando que a execução como root não é permitida. Isso assegura uma camada adicional de segurança no ambiente Kubernetes, evitando práticas que possam comprometer a integridade e a segurança do cluster.
 
 ```bash
 kubectl apply -f disallow-root-user.yaml
-kubectl get clusterpolicies.kyverno.io
+kubectl get clusterpolicies.kyverno.io -o wide
 # Tentar criar um Pod com container com usuário root, irá retornar a mensagem.
 kubectl apply -f podssemlimites.yaml
 ```
+
+### Criar Policy para fazer pull somente de registry confiável
+
+A política `ensure-images-from-trusted-repo` exemplo é essencial para a segurança, garantindo que todos os Pods utilizem imagens provenientes apenas de repositórios confiáveis. Essa política ajuda a prevenir a execução de imagens não verificadas ou potencialmente mal-intencionadas.
+
+```bash
+kubectl apply -f imagesFromTrustedRepo.yaml
+kubectl get clusterpolicies.kyverno.io
+# Tentar criar um Pod com container com usuário root, irá retornar a mensagem.
+kubectl run nginx --image nginx --namespace bichos
+```
+Ao tentar fazer o deploy do nginx da forma mais simples, perceba que a requisição foi bloqueada:
+
+```bash
+bebianc@BerUbuntu22:~/Descomplicando_kubernetes/14-Kyverno$ kubectl run nginx --image nginx --namespace bichos
+Error from server: admission webhook "validate.kyverno.svc-fail" denied the request: 
+
+resource Pod/bichos/nginx was blocked due to the following policies 
+
+disallow-root-user:
+  check-runAsNonRoot: 'validation error: Root? Isso nao pode amigao!. rule check-runAsNonRoot
+    failed at path /spec/containers/0/securityContext/'
+ensure-images-from-trusted-repo:
+  trusted-registry: 'validation error: Somente imagens do repo da Chainguard. rule
+    trusted-registry failed at path /spec/containers/0/image/'
+require-resources-limits:
+  validate-limits: 'validation error: Necessário definir o limite de recursos. rule
+    validate-limits failed at path /spec/containers/0/resources/limits/'
+```
+
+A requisição foi bloqueada de 3 formas: 
+ - Caiu na política de criação de container com usuário root
+ - Regra que bloqueia o pull de imagens que não são da Chainguard
+ - Regra que bloqueia a execução de pods sem limits definidos
+
+ ### Usando o Exclude
+
+ A política `require-resources-limits` exemplo, garante que todos os pods tenham limites de recursos em todas as namespaces.
+ Vamos modificar essa política para não aplicar a regra de bloqueio em Pods de namespaces que de gestão do cluster Kubernetes.
+
+ **Importante**: Por default, o Kyverno já exclui as namespaces kube-system, kube-public e a dele mesmo. Ou seja, as políticas não serão aplicadas para essas namespaces.
