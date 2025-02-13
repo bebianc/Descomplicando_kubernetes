@@ -24,6 +24,9 @@ Funciona como uma camada de roteamento HTTP/HTTPs.
  - Secret TSL (opcional caso queira usar certificado)
 Esses componentes formam o PROXY que irá receber as requisições externas (host:porta) e direcionar para os endpoints (IPs dos Pods), de acordo com as regras criadas. 
 
+**Evolução**: o Gateway API é a evolução do Ingress. O ingress possui suas limitações, por exemplo para fazer o deploy de um Ingress em um cloud provider, é necessário criar annotations específicos na configuração do Ingress, para suportar a infra da cloud.
+O `gateway API` é um conjunto de recursos que oferece mais flexibilidade e poder para gerenciar o tráfego de entrada. É projetado para ser mais extensivo alinhado às necessidades das aplicações mais modernas. Ele suporta uma variedade maior de protocolos como TCP, UDP gRPC, enquanto o Ingress apenas HTTP.
+
 ## Configurando o Kind para suportar o Ingress
 
 Ao criar um cluster Kind, podemos especificar várias configurações que incluem mapeamentos de portas e rótulos para os nodos.
