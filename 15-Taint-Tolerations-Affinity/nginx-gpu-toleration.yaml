@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-gpu-toleration
+  name: nginx-gpu-toleration
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-gpu-toleration
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: nginx-gpu-toleration
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+      tolerations:
+      - key: "gpu" #taint que foi criada no nodo
+        operator: "Equal" #chave igual ("Equal") ao valor abaixo
+        value: "true"  
+        effect: "NoSchedule" # passar o efeito da taint
