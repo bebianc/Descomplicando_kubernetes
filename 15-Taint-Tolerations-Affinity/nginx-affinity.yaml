@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-affinity-region
+  name: nginx-affinity-region
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-affinity-region
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: nginx-affinity-region
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        ports:
+        - containerPort: 80
+      affinity:
+        nodeAffinity: # regra para informar qual será o nó correto
+          requiredDuringSchedulingIgnoredDuringExecution: # Significa que é requirido (required) q a regra seja aplicada no momento de Schedule do Pod ignorando a execução
+          #preferDuringSchedulingIgnoredDuringExecution: # Significa que de "preferencia" (prefer) a regra sera aplicada no momento de Schedule do Pod ignorando a execução
+            nodeSelectorTerms: # define qual vai ser o termo selecionado no nodo
+            - matchExpressions:
+                - key: "region" # vai fazer match com a label regiao do nodo
+                  operator: "In" # dentro do valor da chave
+                  values:
+                  - "us-east-1" 
+        
