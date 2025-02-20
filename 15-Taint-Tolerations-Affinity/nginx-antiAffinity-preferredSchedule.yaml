@@ -5,7 +5,7 @@ metadata:
     app: nginx-preferredscheduling
   name: nginx-preferredscheduling
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: nginx-preferredscheduling
@@ -23,10 +23,10 @@ spec:
       affinity:
         podAntiAffinity: # regra para informar qual será os Pods que entrarao na regra de anti afinidade.
           preferredDuringSchedulingIgnoredDuringExecution: # Significa que de preferencia (preferred) a regra seja aplicada no momento de Schedule do Pod ignorando a execução
-          - weight: 1 # aplicando um peso para a regra. Se tiver duas regras "preferred" será aplicada a regra que tiver o peso mais alto
+          - weight: 100 # aplicando um peso para a regra. Se tiver duas regras "preferred" será aplicada a regra que tiver o peso mais alto
             podAffinityTerm: # usado somente para o "preferred" para "required" é "nodeSelectorTerms"
               labelSelector:
                 matchLabels:
-                  app: nginx-preferredScheduling
+                  app: nginx-preferredscheduling
               topologyKey: "az" # De preferencia será escalado 1 Pod "nginx-preferredScheduling" no host que possui o label "az"
                   
