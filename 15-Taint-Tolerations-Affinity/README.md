@@ -183,5 +183,23 @@ Events:
   ----     ------            ----   ----               -------
   Warning  FailedScheduling  2m26s  default-scheduler  0/4 nodes are available: 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 3 node(s) didn't match pod anti-affinity rules. preemption: 0/4 nodes are available: 1 Preemption is not helpful for scheduling, 3 No preemption victims found for incoming pod.
 ```
-Significa que há 4 nodos disponíveis no cluster, 1 possui Taint de NoSchedule por ser o Master e 3 nodos não deram match devido a regra de anti-affinity do Pod. Nesse caso a regra foi aplicada com sucesso, pois somente 1 Pod foi provisionado pelo kube-scheduler, no nodo com a Label region.
+Significa que há 4 nodos disponíveis no cluster, 1 possui Taint de NoSchedule por ser o Master e 3 nodos não deram match devido a regra de anti-affinity do Pod.
+ Nesse caso a regra foi aplicada com sucesso, pois somente 1 Pod foi provisionado pelo kube-scheduler, no nodo com a Label region.
 
+## Usando o preferredScheduling e o requiredScheduling
+
+A regra de "preferredScheduling" abaixo significa que de preferência será escalado 1 Pod "nginx-preferredScheduling" no host que possui o label "az".
+Porém se não houver outros nodos, vai provisionar no mesmo para manter o número de réplicas estipulado.
+
+```yaml
+affinity:
+        podAntiAffinity: # regra para informar qual será os Pods que entrarao na regra de anti afinidade.
+          preferredDuringSchedulingIgnoredDuringExecution: # Significa que de preferencia (preferred) a regra seja aplicada no momento de Schedule do Pod ignorando a execução
+          - weight: 1 # aplicando um peso para a regra. Se tiver duas regras "preferred" será aplicada a regra que tiver o peso mais alto
+            podAffinityTerm: # usado somente para o "preferred" para "required" é "nodeSelectorTerms"
+              labelSelector:
+                matchLabels:
+                  app: nginx-preferredScheduling
+              topologyKey: "az" # De preferencia será escalado 1 Pod "nginx-preferredScheduling" no host que possui o label "az"
+                  
+```
