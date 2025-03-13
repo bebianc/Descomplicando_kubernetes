@@ -115,10 +115,21 @@ Configurar o AWS CLI:
 aws configure
 ```
 
-As suas credencias da AWS, você pode encontrar em: 
+As suas credencias da AWS, você pode encontrar em: https://console.aws.amazon.com/iam/home?#/security_credentials
+As informações que irá precisar são: 
+
+- AWS Acess Key
+- AWS Secret Key
+- Default region name
+- Default output format
+
+O `Access` e `Secret Key` podem ser encontrados no usuário do IAM, já a região fica a seu critério, nesse caso vamos utilizar a `região` us-east-1. 
+E o formato de saída, vamos utilizar json, mas você pode utilizar tipo `text`, por exemplo.
+
+
 
 ```bash
-eksctl create cluster --name=eks-cluster --version=1.28 --region=us-east-1 nodegroup-name=eks-cluster-nodegroup --node-type=t3.medium --nodes=2 --nodes-min=1 --nodes-max=3 --managed
+eksctl create cluster --name=eks-cluster --version=1.30 --region=us-east-1 --nodegroup-name=eks-cluster-nodegroup --node-type=t3.medium --nodes=2 --nodes-min=1 --nodes-max=3 --managed
 ```
 
 
