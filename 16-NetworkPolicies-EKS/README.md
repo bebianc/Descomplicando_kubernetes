@@ -46,7 +46,7 @@ Se o cluster suporta, para implementar Network Policies você pode utilizar o `C
 
 Referência Calico: https://docs.tigera.io/calico/latest/about
 
-### Instalando o EKS com o EKSCTL
+## Instalando o EKS com o EKSCTL
 
 O EKS é o Kubernetes gerenciado na AWS, nesse caso não precisaremos nos preocupar com a instalação e configuração do Kubernetes.
 Os Nodes do Control Plane são gerenciados pela AWS e Workers podemos ter de 3 maneiras:
@@ -68,7 +68,7 @@ preocupação e menos trabalho com a administração dos Workers.
 
 Nesse exemplo, vamos utilizar o tipo `Managed Node Groups`, pois assim não precisaremos nos preocupar com a administração dos Workers.
 
-**Instalando o EKSCTL**
+### Instalando o EKSCTL
 
 Para criar o cluster vamos utilizar o EKSCTL que é uma ferramenta de linha de comando que nos ajuda a criar e gerenciar o cluster EKS. 
 
@@ -96,7 +96,7 @@ sudo mv /tmp/eksctl /usr/local/bin
 eksctl version
 ```
 
-**Instalando o AWS CLI**
+### Instalando o AWS CLI
 
 O EKSCTL utiliza o AWS CLI para se comunicar com a AWS. 
 
@@ -125,6 +125,127 @@ As informações que irá precisar são:
 
 O `Access` e `Secret Key` podem ser encontrados no usuário do IAM, já a região fica a seu critério, nesse caso vamos utilizar a `região` us-east-1. 
 E o formato de saída, vamos utilizar json, mas você pode utilizar tipo `text`, por exemplo.
+
+
+### Criar um cluster do Modo Automático do EKS com AWS CLI
+
+#### Criar um perfil do IAM do cluster EKS 
+
+**Etapa 1: criar a política de confiança**
+
+Criar política de confiança para permitir que o serviço EKS assuma o perfil. Salve a política como trust-policy.json:
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "eks.amazonaws.com"
+            },
+            "Action": [
+                "sts:AssumeRole",
+                "sts:TagSession"
+            ]
+        }
+    ]
+}
+```
+
+**Etapa 2: criar perfil do IAM**
+
+Use a política de confiança para criar o perfil IAM do cluster (criará uma "Função" no IAM):
+
+```bash
+aws iam create-role --role-name AmazonEKSAutoClusterRole --assume-role-policy-document file://trust-policy.json
+```
+
+**Etapa 3: registre o ARN do perfil**
+
+Recupere e salve o ARN do novo perfil para uso nas etapas subsequentes:
+
+```bash
+aws iam get-role --role-name AmazonEKSAutoClusterRole --query "Role.Arn" --output text 
+```
+
+**Etapa 4: anexar as políticas necessárias**
+
+Anexar as políticas gerenciadas pela AWS ao perfil do IAM do cluster para conceder as permissões:
+
+`AmazonEKSClusterPolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoClusterRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+```
+`AmazonEKSComputePolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoClusterRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSComputePolicy
+```
+`AmazonEKSBlockStoragePolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoClusterRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy
+```
+`AmazonEKSLoadBalancingPolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoClusterRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+```
+`AmazonEKSNetworkingPolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoClusterRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy
+```
+
+#### Criar um perfil do IAM do nó do EKS
+
+**Etapa 1: criar política**
+
+Salve como node-trust-policy.json
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
+
+**Etapa 2: criar perfil do IAM**
+
+Use o arquivo node-trust-policy.json para definir quais entidades podem assumir o perfil:
+
+```bash
+aws iam create-role --role-name AmazonEKSAutoNodeRole --assume-role-policy-document file://node-trust-policy.json
+```
+
+**Etapa 3: registre o ARN do perfil**
+
+Recupere e salve o ARN do novo perfil para uso nas etapas subsequentes:
+
+```bash
+aws iam get-role --role-name AmazonEKSAutoNodeRole --query "Role.Arn" --output text 
+```
+
+**Etapa 4: anexar as políticas necessárias**
+
+Anexar as políticas gerenciadas pela AWS ao perfil do IAM do nó para conceder as permissões:
+
+`AmazonEKSWorkerNodeMinimalPolicy`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoNodeRole --policy-arn arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy
+```
+`AmazonEC2ContainerRegistryPullOnly`
+```bash
+aws iam attach-role-policy --role-name AmazonEKSAutoNodeRole --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly
+```
+
+
+
 
 
 
