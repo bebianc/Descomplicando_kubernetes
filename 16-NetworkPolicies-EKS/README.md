@@ -79,22 +79,12 @@ de IaC, como Terraform, por exemplo.
 
 Instalar no Linux:
 
-```bash
-# para ARM system
-ARCH=adm64 # verificar a arquitetura antes com 'uname -m'.
-PLATAFORM=$(uname -s)_$ARCH
-
-curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATAFORM.tar.gz"
-
-#Verificação checksum - opcional
-curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATAFORM | sha256sum --check
-
-tar -xzf eksctl_$PLATAFORM.tar.gz -C /tmp && rm eksctl_$PLATAFORM.tar.gz
-
-sudo mv /tmp/eksctl /usr/local/bin
-
-eksctl version
-```
+ ```bash
+ # instalando eksctl
+ curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+ sudo mv /tmp/eksctl /usr/local/bin
+ eksctl version
+ ```
 
 ### Instalando o AWS CLI
 
@@ -161,3 +151,49 @@ Para deletar o cluster:
 ```bash
 eksctl delete cluster --region=us-east-1 --name=eks-pick1
 ```
+
+### Instalando o AWS VPC CNI Plugin
+
+O AWS VPC Plugin é um plugin de rede que permite que os Pods se comuniquem com outros Pods e serviços dentro do cluster. Ele também permite que os Pods se
+comuniquem com serviços fora do cluster, como Amazon S3, por exemplo.
+
+Vamos utilizar o EKSCTL para instalar o AWS CLI Plugin, pois apesar de ser o CNI padrão do EKS, ele não vem instalado:
+```bash
+eksctl create addon --name vpc-cni --version v1.19.2-eksbuild.5 --cluster eks-pick1 --force
+```
+
+Link com a versão do CNI compatível com a versão do Kubernetes: https://docs.aws.amazon.com/pt_br/eks/latest/userguide/managing-vpc-cni.html
+
+Para verificar os addons instalados no cluster:
+```bash
+eksctl get addon --cluster eks-pick1
+```
+
+### Habilitar o Network Policy nas configurações avançadas do CNI
+
+Acessar o console e seguir os passos:
+ - Acessar o serviço EKS.
+ - Selecionar o seu cluster.
+ - Selecionar a aba `Add-ons`.
+ - Selecionar o edit do Addon `vpc-cni`.
+ - Configuração avançada do CNI em `optional configuration settings`.
+ - Habilitar o Network Policy adicionando no campo `Configuration values`: "enableNetworkPolicy": "true"
+
+ Aguardar alguns minutos para validar se o Network Policy está atualizado e habilitado.
+
+ ### Instalando um Nginx Ingress Controller
+
+Se atentar a versão do Ingress Controller que será instalada, de acordo com a versão do Kubernetes:
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml
+```
+
+Guia de instalação: https://kubernetes.github.io/ingress-nginx/deploy/
+
+Ver se o controller foi instalado:
+```bash
+kubectl wait --namespace=ingress-nginx --for=condition=ready pod --selector=app.kubernees.io/component=controller --timeout=90s
+```
+
+
+
