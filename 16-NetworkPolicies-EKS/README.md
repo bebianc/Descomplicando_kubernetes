@@ -42,9 +42,12 @@ Se retornar `networking.k8s.io/v1` significa que o cluster suporta.
 
 Se retornar `networking.k8s.io/v1beta1` significa que o cluster não suporta.
 
-Se o cluster suporta, para implementar Network Policies você pode utilizar o `Calico`, `Weave Net` e o `Cilium` que são ferramentas mais atualizadas.
+Se o cluster suporta, para implementar Network Policies você pode utilizar o `Calico`, `Weave Net` e o `Cilium` que são ferramentas mais atualizadas. O Flannel atualmente, não tem suporte a Network Policy.
 
 Referência Calico: https://docs.tigera.io/calico/latest/about
+
+Uma outra de aplicar políticas é com um `Service Mesh` como Istio, por exemplo, inclusive um controle maior, pois o Network Policy não faz esse controle na camada de aplicação (layer 7), porém com um Service Mesh pode deixar muito mais pesado, diferente do Network Policy que é leve, mais simples. 
+A recomendação é utilizar o Network Policy para possíveis regras, havendo necessidade de um controle maior, novas políticas podem ser criadas usando o `Istio`.
 
 ## Instalando o EKS com o EKSCTL
 
@@ -195,5 +198,84 @@ Ver se o controller foi instalado:
 kubectl wait --namespace=ingress-nginx --for=condition=ready pod --selector=app.kubernees.io/component=controller --timeout=90s
 ```
 
+### Instalando uma aplicação e o Ingress da app
 
+```bash
+kubectl create ns giropops
+kubectl apply -f redis-deployment.yaml
+kubectl apply -f redis-service.yaml
+kubectl apply -f giropops-deployment.yaml
+kubectl apply -f giropops-service.yaml
+kubectl port-forward -n giropops svc/giropops-senhas 5000:5000
+# aplicar um ingress para aplicação
+kubectl apply -f ingress-giropops-aws-dominio.yaml
+kubectl get ingress -n giropops
+```
 
+Se o Dominio não estiver na AWS, criar um CNAME nas configurações do domínio apontando para o Load Balancer da AWS. 
+Se o domínio estiver na AWS, basta deixar comentado a regra "host" do domínio para usar a URL da AWS que gera automático.
+Aguardar a propagação do DNS realizar requisições na aplicação e acompanhar os logs:
+
+```bash
+kubectl logs -f -n giropops nomedocontainer
+```
+## Criando uma Network Policy
+
+Criar uma política para que um pode não tenha permissão para se comunicar com outro, mesmo se dividir o cluster por namespace, no Kubernetes os Pods podem se comunicar mesmo rodando em namespaces diferentes.
+
+Verificar se há uma política criada:
+```bash
+kubectl get netpol
+kubectl get networkpolicies
+```
+
+Criar uma aplicação de teste para validar a comunicação antes de criar a regra:
+```bash
+kubectl run -ti alpine --image alpine -- sh
+# acessando o container, verificar os processos
+ps ef
+#instalar o curl
+apk add curl
+#testar comunicao com o giropops
+curl giropops-senhas.giropops.svc:5000
+curl giropops-senhas.giropops.svc.cluster.local:5000
+curl giropops-senhas.giropops.svc.cluster.local:5000
+curl redis-service.giropops.svc:6379
+#instalar o redis no container para testar comunicação com o redis do giropops
+apk add redis
+redis-cli -h redis-service.giropops.svc ping # deve retornar um "PONG" do redis do giropops
+```
+**Criando uma regra para que Pods de outra namespace não se comuniquem com redis**
+
+```bash
+kubectl apply -f netpol/primera-netpol.yaml
+kubectl get netpol -n giropops
+kubectl describe -n giropops primeira-netpol
+#verificar se o alpine esta rodando
+kubectl get pods 
+kubectl exec -ti alpine -- sh
+#instalar o curl
+apk add curl
+curl giropops-senhas.giropops.svc:5000 # aqui irá funcionar, pois a regra se aplica só ao redis
+apk add redis
+redis-cli -h redis-service.giropops.svc ping # nao irá retornar o PONG como antes
+```
+
+Testando a comunicação a partir do alpine na mesma namespace do redis do giropops:
+```bash
+kubectl run -ti alpine --image alpine -n giropops -- sh
+apk add curl 
+curl giropops-senhas.giropops.svc:5000 
+apk add redis
+redis-cli -h redis-service.giropops.svc ping # aqui irá retornar o PONG, pq a regra se aplica apenas para requisições de fora da namespace do redis.
+```
+Nessa regra, a comunicação com o redis, só será permitida vindo de uma aplicação que está rodando na mesma namespace que ele.
+
+ **Aplicativo STRESS no container: usado para estressar a aplicação**
+$ apt-get install stress
+$ stress --cpu 1 --vm-bytes 32M --vm 1 
+
+**recursos consumidos pelo container**
+$ docker container stats --no-stream # --no-stream para só imprimir uma vez
+# gerar trafego para consumir recurso dentro do container
+$ dd if=/dev/zero of=tatu.img bs=8k count=2560k

@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: primeira-netpol
+  namespace: giropops
+spec:
+  podSelector: # uma regra será aplicada para todos os Pods que quiserem se comunicar com o redis
+    matchLabels: 
+      app: redis # o redis selecionado é o que possui a label informada aqui
+  # regra será aplicada da seguinte forma:    
+  ingress: # todas requisicoes de entrada (ingress) no redis 
+  - from: # indicar de onde está vindo a conexao
+    - podSelector: {} # aqui deve indicar as labels dos Pods que será aplicada a regra, nesse caso está aplicando para todos e qualquer Pod do cluster
+       
