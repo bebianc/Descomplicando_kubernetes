@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-app
+  namespace: giropops
+spec:
+  podSelector: {} # pode enviar requisição para todos os pods da namespace giropops
+  policyTypes: 
+  - Ingress
+  ingress:
+  - from: 
+    - namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ingress-nginx # do ingress-nginx para os pods da namespace giropops
+    ports:
+    - protocol: TCP 
+      port: 5000 # somente na porta 5000
+  
+        

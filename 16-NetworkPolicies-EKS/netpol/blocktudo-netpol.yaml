@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: giropops
+spec:
+  podSelector: {} # todos os pods, ou seja, nenhum pode enviar requisições para namespace informada abaixo
+  policyTypes: 
+  - Ingress
+  - Egress
+  # irá bloquear todas as requisições tanto de entrada como de saida
+        

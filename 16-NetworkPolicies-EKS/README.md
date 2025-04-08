@@ -219,7 +219,9 @@ Aguardar a propagação do DNS realizar requisições na aplicação e acompanha
 ```bash
 kubectl logs -f -n giropops nomedocontainer
 ```
-## Criando uma Network Policy
+## Criando Network Policy
+
+### Política que impede a comunicação entre pods de diferentes namespaces 
 
 Criar uma política para que um pode não tenha permissão para se comunicar com outro, mesmo se dividir o cluster por namespace, no Kubernetes os Pods podem se comunicar mesmo rodando em namespaces diferentes.
 
@@ -248,9 +250,9 @@ redis-cli -h redis-service.giropops.svc ping # deve retornar um "PONG" do redis 
 **Criando uma regra para que Pods de outra namespace não se comuniquem com redis**
 
 ```bash
-kubectl apply -f netpol/primera-netpol.yaml
+kubectl apply -f netpol/blockpod-netpol.yaml
 kubectl get netpol -n giropops
-kubectl describe -n giropops primeira-netpol
+kubectl describe -n giropops blockpod-netpol
 #verificar se o alpine esta rodando
 kubectl get pods 
 kubectl exec -ti alpine -- sh
@@ -271,6 +273,34 @@ redis-cli -h redis-service.giropops.svc ping # aqui irá retornar o PONG, pq a r
 ```
 Nessa regra, a comunicação com o redis, só será permitida vindo de uma aplicação que está rodando na mesma namespace que ele.
 
+### NetPol para bloquear requisições de entrada (ingress) para uma namespace
+
+```bash 
+# deletar regra anterior
+kubectl delete netpol -n giropops blockpod-netpol
+kubectl apply -f blocknamespace-netpol.yaml
+kubectl exec -ti alpine -- sh
+curl giropops-senhas.giropops.svc:5000 # nao irá comunicar com a aplicação na namespace giropops
+redis-cli -h redis-service.giropops.svc ping # nao irá retornar o PONG, pois o redis está na namespace giropops
+```
+O acesso a aplicação pela web ficou comprometido, pois o Ingress Nginx também não consegue se comunicar com namespace, retornando erro 504 Gateway Time-out.
+
+Para resolver esse cenário teremos que adicionar a `label name` do Controller da namespace `ingress-nginx`, com isso as requisições dessa namespace poderão chegar até a namespace giropops.
+
+```bash 
+kubectl apply -f blocknamespace-netpol.yaml # ou aplicar blocknamespacemelhorada-netpol, as duas tem a mesma função só escritas diferentes
+```
+Agora já é possível validar se é possível acessar a aplicação pelo navegador.
+Validar também se pods de outras namespaces conseguem se comunicar com a `ingress-nginx` e `giropops`.
+Cuidado para não bloquear coisas de mais.
+
+### Política pra bloquear tudo e liberar somente a comunicação necessária
+
+- Criamos a regra blocktudo-netpol.yaml que irá bloquear toda a comunicação na namespace giropops, nem a app comunica com o Redis.
+- Criamos uma regra allowRedisApp-netpol.yaml para liberar a comunicação ingress do giropops para o Redis.
+- Criamos uma regra allowIngressApp-netpol.yaml para o Ingress enviar requisição para a App, liberando somente na porta 5000.
+
+======
  **Aplicativo STRESS no container: usado para estressar a aplicação**
 $ apt-get install stress
 $ stress --cpu 1 --vm-bytes 32M --vm 1 

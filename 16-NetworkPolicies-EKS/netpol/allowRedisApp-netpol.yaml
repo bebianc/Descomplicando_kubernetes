@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-redis-app-only
+  namespace: giropops
+spec:
+  podSelector:
+    matchLabels:
+      app: redis # libera a comunicação com o redis
+  policyTypes: 
+  - Ingress
+  ingress:
+  - from: # indica a app que poderá enviar requisições
+    - podSelector:
+        matchLabels:
+          app: giropops-senhas # libera a app comunicar com o redis
+      namespaceSelector: # adiciona tb pra dar match com a namespace, senao pode ter uma app com o mesmo nome em outra ns que estará liberada. Lembrando que não tem "-" indicando operador lógico "and"
+        matchLabels:
+          kubernetes.io/metadata.name: giropops
+  
+        

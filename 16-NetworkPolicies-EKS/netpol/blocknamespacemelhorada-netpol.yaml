@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bloqueiatudo-netpol
+  namespace: giropops
+spec:
+  podSelector: {} # todos os pods, ou seja, nenhum pode enviar requisições para namespace informada abaixo
+  policyTypes:
+  - Ingress
+  ingress:  # informa que a regra é para não receber requisição de entrada  
+  - from:
+    - namespaceSelector: # informar a namespace que não receberá comunicação
+        matchExpression:
+        - key: kubernetes.io/metadata.name # irá pegar o label da namespace que possui o campo name
+          operator: In 
+          values: ["ingress-nginx", "giropops"] # nome das namespaces         
+        
+        

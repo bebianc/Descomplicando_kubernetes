@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bloqueiatudo-netpol
+  namespace: giropops
+spec:
+  podSelector: {} # todos os pods, ou seja, nenhum pode enviar requisições para namespace informada abaixo
+  policyTypes:
+  - Ingress
+  ingress:  # informa que a regra é para não receber requisição  
+  - from:
+    - namespaceSelector: # informar a namespace que não receberá comunicação
+        matchLabels:
+          kubernetes.io/metadata.name: giropops # adicionado o Label name criado por default pelo Kubernetes da namespace que nao irá receber requisições 
+    - namespaceSelector: # adicionando mais um namespaceSelector para permitir a giropops receber requisições de uma namespace especifica. O operador lógico "-" indica "ou" se nao tivesse, seria "and"
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx # adicionado o Label name do ingress-nginx para permitir enviar requisições para a namespace giropops
