@@ -297,8 +297,29 @@ Cuidado para não bloquear coisas de mais.
 ### Política pra bloquear tudo e liberar somente a comunicação necessária
 
 - Criamos a regra blocktudo-netpol.yaml que irá bloquear toda a comunicação na namespace giropops, nem a app comunica com o Redis.
-- Criamos uma regra allowRedisApp-netpol.yaml para liberar a comunicação ingress do giropops para o Redis.
+- Criamos uma regra allowRedisApp-netpol.yaml para liberar a comunicação de entrada do giropops para o Redis.
 - Criamos uma regra allowIngressApp-netpol.yaml para o Ingress enviar requisição para a App, liberando somente na porta 5000.
+
+**Problema 1**: A app não estava conseguindo se comunicar com Redis, pois não estava se comunicando com o coredns do cluster. O `coredns` da namespace kube-system é o recurso do Kubernetes que realiza a resolução de DNS do cluster, as aplicações precisam consultar essa API para conseguirem 
+se comunicar internamente e externamente. 
+
+**Para resolver**, fazer o apply da policy allowDNS-netpol.yaml na namespace giropops, para as aplicações conseguirem consultar o coredns.
+
+**Problema 2**: A app consegue resolver o dns interno para comunicar com o Redis, porém não tem uma regra para realizar requisições de saída para o Redis.
+Às vezes a aplicação não quebra de imediato, pois possui um cache temporário, mas possivelmente se ela reiniciar 
+ou atingir o ttl do cache, as chaves não serão armazenadas no Redis, pois a comunicação está quebrada.
+
+```bash
+# teste de comunicação a partir da App para o redis
+kubectl exec -ti alpine -n giropops -- sh
+#testar comunicao com a App giropops
+curl giropops-senhas.giropops.svc:5000
+#testar comunicacao com o redis
+curl redis.giropops.svc.cluster.local:6379
+```
+Com os testes irá verificar que nos logs da App que erro de timeout para comunicar com o Redis, onde a função LPUSH para enviar dados para o Redis retorna erro.
+
+**Para resolver**, fazer o apply da policy allow-app-to-redis.yaml na namespace giropops, para a app conseguir se comunicar com o Redis e fazer o redeploy dos Pods.
 
 ======
  **Aplicativo STRESS no container: usado para estressar a aplicação**
